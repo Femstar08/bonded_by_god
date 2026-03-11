@@ -1,36 +1,120 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Scriptloom - Write with clarity and insight
+
+A Spirit-Led Writing & Speaking Assistant for Christian content creators.
+
+## Features (MVP Sprint 1)
+
+- ✅ User authentication (Sign up / Sign in)
+- ✅ Project creation with role and type selection
+- ✅ Minimalist writing editor with auto-save
+- ✅ Notes for storing and organizing sermon/church notes
+- ✅ Tag-based organization and search
+
+## Tech Stack
+
+- **Frontend:** Next.js 16+ with React 19, TypeScript
+- **UI:** TailwindCSS, ShadCN UI
+- **Backend:** Supabase (PostgreSQL, Authentication)
+- **Forms:** React Hook Form + Zod validation
 
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+- Node.js 18+ and npm
+- A Supabase account and project
+
+### Setup Instructions
+
+1. **Clone and install dependencies:**
+   ```bash
+   npm install
+   ```
+
+2. **Set up Supabase:**
+   - Create a new Supabase project at [supabase.com](https://supabase.com)
+   - Get your project URL and anon key from the project settings
+
+3. **Configure environment variables:**
+   - Copy `env.example` to `.env.local`
+   - Add your Supabase credentials:
+     ```
+     NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
+     NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+     ```
+
+4. **Run database migrations:**
+   - In your Supabase dashboard, go to SQL Editor
+   - Run the SQL from `supabase/migrations/001_initial_schema.sql`
+   - This creates the `projects` and `notes` tables with proper RLS policies
+
+5. **Start the development server:**
+   ```bash
+   npm run dev
+   ```
+
+6. **Open your browser:**
+   - Navigate to [http://localhost:3000](http://localhost:3000)
+   - Sign up for a new account or sign in
+
+## Project Structure
+
+```
+bonded_by_god/
+├── app/
+│   ├── (auth)/              # Authentication pages
+│   │   ├── login/
+│   │   └── signup/
+│   ├── (dashboard)/         # Protected dashboard routes
+│   │   ├── projects/       # Project list and creation
+│   │   ├── editor/         # Writing interface
+│   │   └── notes/          # Notes
+│   └── layout.tsx          # Root layout
+├── components/
+│   ├── ui/                 # ShadCN UI components
+│   ├── editor/             # Editor components
+│   ├── project/            # Project-related components
+│   ├── notes/              # Notes components
+│   └── auth/                # Auth components
+├── lib/
+│   ├── supabase/           # Supabase client utilities
+│   └── hooks/              # Custom React hooks
+├── types/
+│   └── database.ts         # TypeScript types
+└── supabase/
+    └── migrations/         # Database migrations
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Database Schema
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Projects Table
+- `id` (UUID, primary key)
+- `user_id` (UUID, foreign key to auth.users)
+- `title` (text)
+- `type` (enum: 'book', 'sermon', 'devotional', 'notes')
+- `role` (text)
+- `content` (text)
+- `structure` (jsonb, optional)
+- `created_at`, `updated_at` (timestamps)
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### Notes Table
+- `id` (UUID, primary key)
+- `user_id` (UUID, foreign key to auth.users)
+- `content` (text)
+- `tags` (text array)
+- `created_at`, `updated_at` (timestamps)
 
-## Learn More
+Both tables have Row Level Security (RLS) enabled to ensure users can only access their own data.
 
-To learn more about Next.js, take a look at the following resources:
+## Next Steps (Future Sprints)
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- AI-powered scripture suggestions
+- AI writing assistance prompts
+- Export functionality (PDF, Word, email)
+- Writing goal tracking
+- Daily scripture focus
+- Advanced sermon outline generator
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## License
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Private project - All rights reserved
