@@ -40,9 +40,44 @@ Guidelines:
 
 Return only the reflective continuation. No labels or commentary.`
 
-export async function runShepherd(input: AgentInput & { mode?: 'review' | 'deepen' }): Promise<AgentResult> {
+import { getRepurposeInstructions } from '@/lib/ai/repurposePrompts'
+import type { RepurposeFormat } from '@/types/repurposing'
+
+const FORMAT_SYSTEM_PROMPT = `You are "The Shepherd", a spiritual content specialist for a Christian writing platform called Scriptloom.
+
+Your role is to transform existing writing into spiritually structured formats — discussion guides, devotional series, and other resources that require theological grounding and careful pastoral tone.
+
+When generating:
+• Ensure every Scripture reference is accurate and contextually appropriate
+• Maintain theological consistency throughout
+• Structure content for group or individual spiritual growth
+• Preserve the author's core message and voice
+• Be pastorally warm, not academically cold
+
+Return ONLY the formatted content. No explanations or meta-commentary.`
+
+export async function runShepherd(
+  input: AgentInput & { mode?: 'review' | 'deepen' | 'format'; repurposeFormat?: RepurposeFormat }
+): Promise<AgentResult> {
   const mode = input.mode ?? 'review'
   const contextBlock = formatContextForPrompt(input.context)
+
+  if (mode === 'format' && input.repurposeFormat) {
+    const formatInstructions = getRepurposeInstructions(
+      input.repurposeFormat,
+      input.context.userRole
+    )
+
+    const userMessage = `${contextBlock}\n\n${formatInstructions}\n\nSource content:\n${input.userText?.substring(0, 8000) || ''}`
+
+    const content = await callClaude({
+      system: FORMAT_SYSTEM_PROMPT,
+      userMessage,
+      maxTokens: 4096,
+    })
+
+    return { agent: 'shepherd', content }
+  }
 
   if (mode === 'deepen') {
     const userMessage = `${contextBlock}\n\nParagraph:\n${input.userText?.substring(0, 4000) || ''}`

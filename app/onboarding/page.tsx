@@ -122,6 +122,60 @@ function RoleTooltip({ onDismiss }: { onDismiss: () => void }) {
 }
 
 // ---------------------------------------------------------------------------
+// Step indicator
+// ---------------------------------------------------------------------------
+function StepIndicator({ current, total }: { current: number; total: number }) {
+  return (
+    <div className="flex items-center gap-2" aria-label={`Step ${current} of ${total}`}>
+      {Array.from({ length: total }, (_, i) => {
+        const stepNum = i + 1
+        const isActive = stepNum === current
+        const isComplete = stepNum < current
+        return (
+          <React.Fragment key={stepNum}>
+            <div
+              className={[
+                'flex h-7 w-7 items-center justify-center rounded-full text-[12px] font-semibold transition-all duration-300',
+                isActive
+                  ? 'bg-[#0f1a2e] text-white shadow-md'
+                  : isComplete
+                  ? 'bg-amber-400 text-white'
+                  : 'bg-border/30 text-muted-foreground/50',
+              ].join(' ')}
+              aria-current={isActive ? 'step' : undefined}
+            >
+              {isComplete ? (
+                <svg
+                  className="h-3.5 w-3.5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={3}
+                  aria-hidden="true"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                </svg>
+              ) : (
+                stepNum
+              )}
+            </div>
+            {stepNum < total && (
+              <div
+                className={[
+                  'h-px w-8 transition-all duration-300',
+                  isComplete ? 'bg-amber-400' : 'bg-border/30',
+                ].join(' ')}
+                aria-hidden="true"
+              />
+            )}
+          </React.Fragment>
+        )
+      })}
+    </div>
+  )
+}
+
+// ---------------------------------------------------------------------------
 // Step 1 — Role selection
 // ---------------------------------------------------------------------------
 interface RoleStepProps {
@@ -155,24 +209,26 @@ function RoleSelectionStep({ selectedRole, onSelectRole, onNext, onSkip }: RoleS
     <>
       {showTooltip && <RoleTooltip onDismiss={handleDismiss} />}
 
-      <div className="mx-auto flex w-full max-w-5xl flex-col items-center gap-8 px-4 py-10">
+      <div className="max-w-3xl mx-auto px-8 py-16 w-full">
+        {/* Step indicator */}
+        <div className="flex justify-center mb-10">
+          <StepIndicator current={1} total={2} />
+        </div>
+
         {/* Heading block */}
-        <header className="text-center space-y-3 max-w-2xl">
-          <p className="text-xs font-semibold uppercase tracking-widest text-amber-400">
-            Step 1 of 2
-          </p>
-          <h1 className="text-3xl sm:text-4xl font-serif font-bold text-white leading-tight drop-shadow-md">
+        <header className="text-center mb-12">
+          <h1 className="font-serif text-4xl font-normal tracking-tight text-foreground">
             Welcome to Your Spirit-Led Writing Assistant
           </h1>
-          <p className="text-base sm:text-lg text-slate-200 font-medium">
-            Select Your Primary Intent
+          <p className="text-muted-foreground/60 text-[16px] mt-3">
+            Select your primary role to unlock a customised toolkit
           </p>
         </header>
 
         {/* Role cards grid */}
         <section
           aria-label="Role selection"
-          className="w-full grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"
+          className="grid grid-cols-2 md:grid-cols-3 gap-4"
         >
           {ROLES.map((role) => (
             <RoleCard
@@ -187,37 +243,35 @@ function RoleSelectionStep({ selectedRole, onSelectRole, onNext, onSkip }: RoleS
         </section>
 
         {/* Footer hint */}
-        <p className="text-sm text-slate-300 text-center">
+        <p className="text-[13px] text-muted-foreground/40 text-center mt-8">
           You can mix and match tools any time from your dashboard
         </p>
 
         {/* Navigation row */}
         <nav
           aria-label="Onboarding navigation"
-          className="flex w-full max-w-xl items-center justify-between gap-4"
+          className="flex items-center justify-between mt-10"
         >
           <button
             type="button"
             onClick={onSkip}
-            className="text-sm text-slate-300 underline-offset-2 hover:underline hover:text-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 rounded px-1"
+            className="text-sm text-muted-foreground/40 hover:text-muted-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 rounded px-1"
           >
             Skip
           </button>
 
-          <Button
+          <button
             type="button"
             onClick={onNext}
             disabled={!selectedRole}
-            className={[
-              'px-8 font-semibold transition-all duration-200',
-              selectedRole
-                ? 'bg-amber-500 text-white hover:bg-amber-600 shadow-lg shadow-amber-900/30'
-                : 'bg-slate-600 text-slate-400 cursor-not-allowed',
-            ].join(' ')}
             aria-disabled={!selectedRole}
+            className={[
+              'bg-[#0f1a2e] hover:bg-[#1a2d4d] text-white rounded-xl px-8 py-3 text-[15px] font-semibold transition-all duration-200',
+              !selectedRole ? 'opacity-40 cursor-not-allowed' : '',
+            ].join(' ')}
           >
-            Next
-          </Button>
+            Continue
+          </button>
         </nav>
       </div>
     </>
@@ -256,46 +310,42 @@ export default function OnboardingPage() {
 
   return (
     <div
-      className="min-h-screen w-full bg-gradient-to-b from-slate-800 via-slate-600 to-slate-200 flex flex-col"
+      className="flex flex-1 flex-col"
       // Ensure page is announced correctly by screen readers on step change
       aria-live="polite"
       aria-atomic="false"
     >
-      {/* Subtle mountain texture overlay */}
-      <div
-        className="pointer-events-none absolute inset-0 bg-gradient-to-b from-slate-900/40 via-transparent to-white/10"
-        aria-hidden="true"
-      />
-
-      {/* Scrollable content area */}
-      <div className="relative z-10 flex flex-1 flex-col items-center justify-start overflow-y-auto">
-        {step === 1 ? (
-          <RoleSelectionStep
-            selectedRole={selectedRole}
-            onSelectRole={handleSelectRole}
-            onNext={handleNext}
-            onSkip={handleSkip}
-          />
-        ) : (
-          <div className="mx-auto flex w-full max-w-5xl flex-col items-center gap-8 px-4 py-10">
-            {/* Step 2 heading */}
-            <header className="text-center space-y-3 max-w-2xl">
-              <h1 className="text-3xl sm:text-4xl font-serif font-bold text-white leading-tight drop-shadow-md">
-                Create Your First Project
-              </h1>
-              <p className="text-base text-slate-200">
-                Tell us a little about what you&apos;re working on
-              </p>
-            </header>
-
-            <ProjectForm
-              role={selectedRole!}
-              onBack={handleBack}
-              onSubmit={handleProjectCreated}
-            />
+      {step === 1 ? (
+        <RoleSelectionStep
+          selectedRole={selectedRole}
+          onSelectRole={handleSelectRole}
+          onNext={handleNext}
+          onSkip={handleSkip}
+        />
+      ) : (
+        <div className="max-w-3xl mx-auto px-8 py-16 w-full">
+          {/* Step indicator */}
+          <div className="flex justify-center mb-10">
+            <StepIndicator current={2} total={2} />
           </div>
-        )}
-      </div>
+
+          {/* Step 2 heading */}
+          <header className="text-center mb-12">
+            <h1 className="font-serif text-4xl font-normal tracking-tight text-foreground">
+              Create Your First Project
+            </h1>
+            <p className="text-muted-foreground/60 text-[16px] mt-3">
+              Tell us a little about what you&apos;re working on
+            </p>
+          </header>
+
+          <ProjectForm
+            role={selectedRole!}
+            onBack={handleBack}
+            onSubmit={handleProjectCreated}
+          />
+        </div>
+      )}
     </div>
   )
 }

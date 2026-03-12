@@ -89,62 +89,68 @@ export default async function DashboardPage() {
   const fallbackProject = projects?.[0] ?? null
 
   return (
-    <div className="container mx-auto p-6 max-w-4xl space-y-10">
+    <div className="container mx-auto px-10 py-12 max-w-4xl space-y-14">
+
       {/* Greeting */}
       <div>
-        <h1 className="text-2xl font-serif font-bold tracking-tight">{getGreeting()}</h1>
-        <p className="text-muted-foreground text-sm mt-1">What will you write today?</p>
+        <h1 className="text-4xl font-serif font-normal tracking-tight text-foreground">{getGreeting()}</h1>
+        <p className="text-muted-foreground/60 text-[15px] mt-3">What will you write today?</p>
       </div>
 
       {/* Section 1: Continue Writing */}
       <section aria-label="Continue writing">
         {continueChapter && continueProject ? (
-          <div className="border border-border/50 rounded-xl p-8">
-            <p className="text-xs font-medium uppercase tracking-widest text-muted-foreground mb-4">
+          <div className="relative overflow-hidden bg-gradient-to-br from-[#0f1a2e] via-[#162040] to-[#1a2d4d] rounded-2xl px-10 py-10 shadow-2xl">
+            {/* Decorative glow */}
+            <div className="pointer-events-none absolute top-0 right-0 w-64 h-64 bg-amber-400/[0.04] rounded-full blur-3xl -translate-y-1/2 translate-x-1/4" />
+            <p className="text-[11px] uppercase tracking-[0.25em] text-amber-300/70 font-semibold mb-6">
               Continue Writing
             </p>
-            <p className="text-sm text-muted-foreground">
-              Project: {continueProject.title}
+            <p className="text-[14px] text-white/70 font-medium">
+              {continueProject.title}
             </p>
-            <h2 className="font-serif text-2xl font-semibold mt-1 text-foreground">
+            <h2 className="font-serif text-3xl text-white font-normal mt-2 leading-tight">
               {continueChapter.title}
             </h2>
-            <p className="text-sm text-muted-foreground mt-2">
-              Last edited: {getRelativeTime(continueChapter.updated_at)}
+            <p className="text-[13px] text-white/50 mt-4">
+              Last edited {getRelativeTime(continueChapter.updated_at)}
             </p>
             <Link
               href={`/editor/${continueChapter.project_id}`}
-              className="inline-flex items-center mt-6 rounded-md px-5 py-2.5 text-sm font-medium bg-amber-600 hover:bg-amber-700 text-white transition-colors"
+              className="inline-flex items-center mt-8 bg-amber-500 hover:bg-amber-400 text-white rounded-lg px-7 py-3 text-sm font-semibold shadow-lg shadow-amber-500/25 transition-all duration-200 hover:shadow-xl hover:shadow-amber-500/30"
             >
-              Continue Writing &rarr;
+              Continue Writing
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="ml-2"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
             </Link>
           </div>
         ) : fallbackProject ? (
-          <div className="border border-border/50 rounded-xl p-8">
-            <p className="text-xs font-medium uppercase tracking-widest text-muted-foreground mb-4">
+          <div className="relative overflow-hidden bg-gradient-to-br from-[#0f1a2e] via-[#162040] to-[#1a2d4d] rounded-2xl px-10 py-10 shadow-2xl">
+            <div className="pointer-events-none absolute top-0 right-0 w-64 h-64 bg-amber-400/[0.04] rounded-full blur-3xl -translate-y-1/2 translate-x-1/4" />
+            <p className="text-[11px] uppercase tracking-[0.25em] text-amber-300/70 font-semibold mb-6">
               Continue Writing
             </p>
-            <h2 className="font-serif text-xl font-semibold text-foreground">
+            <h2 className="font-serif text-3xl text-white font-normal leading-tight">
               Start your first chapter
             </h2>
-            <p className="text-sm text-muted-foreground mt-2">
-              Open <span className="font-medium text-foreground">{fallbackProject.title}</span> and begin writing.
+            <p className="text-[15px] text-white/70 mt-3">
+              Open <span className="text-white font-medium">{fallbackProject.title}</span> and begin writing.
             </p>
             <Link
               href={`/editor/${fallbackProject.id}`}
-              className="inline-flex items-center mt-6 rounded-md px-5 py-2.5 text-sm font-medium bg-amber-600 hover:bg-amber-700 text-white transition-colors"
+              className="inline-flex items-center mt-8 bg-amber-500 hover:bg-amber-400 text-white rounded-lg px-7 py-3 text-sm font-semibold shadow-lg shadow-amber-500/25 transition-all duration-200 hover:shadow-xl hover:shadow-amber-500/30"
             >
-              Start Writing &rarr;
+              Start Writing
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="ml-2"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
             </Link>
           </div>
         ) : (
-          <div className="border border-border/50 rounded-xl p-8 text-center">
-            <p className="text-muted-foreground">
+          <div className="relative overflow-hidden bg-gradient-to-br from-[#0f1a2e] via-[#162040] to-[#1a2d4d] rounded-2xl px-10 py-10 shadow-2xl text-center">
+            <p className="text-white/50 text-[15px]">
               Create a project to start writing.
             </p>
             <Link
               href="/projects/new"
-              className="inline-flex items-center mt-4 rounded-md px-5 py-2.5 text-sm font-medium bg-amber-600 hover:bg-amber-700 text-white transition-colors"
+              className="inline-flex items-center mt-6 bg-amber-500 hover:bg-amber-400 text-white rounded-lg px-7 py-3 text-sm font-semibold shadow-lg shadow-amber-500/25 transition-all duration-200"
             >
               Create Project
             </Link>
@@ -160,45 +166,79 @@ export default async function DashboardPage() {
       {/* Section 3: Your Projects */}
       {projects && projects.length > 0 && (
         <section aria-label="Your projects">
-          <h2 className="text-lg font-semibold tracking-tight mb-4">Your Projects</h2>
-          <div className="divide-y divide-border/50">
+          <h2 className="text-sm font-semibold uppercase tracking-[0.15em] text-muted-foreground/60 mb-5">
+            Your Projects
+          </h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {projects.map((project) => {
               const tag = getTagStyle(project.type)
               return (
                 <Link
                   key={project.id}
                   href={`/editor/${project.id}`}
-                  className="flex items-center justify-between py-3.5 px-1 rounded-sm transition-colors hover:bg-accent/50 -mx-1 group"
+                  className="group relative rounded-2xl border border-border/50 bg-white p-6 hover:shadow-xl hover:shadow-black/[0.04] hover:border-border/80 hover:-translate-y-0.5 transition-all duration-250 cursor-pointer"
                 >
-                  <div className="flex items-center gap-3 min-w-0">
-                    <span className="text-foreground font-medium truncate group-hover:text-foreground/80">
-                      {project.title}
-                    </span>
+                  <div className="flex items-start justify-between gap-2 mb-4">
                     {project.type && (
                       <span
-                        className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${tag.bg} ${tag.text} shrink-0`}
+                        className={`inline-flex items-center rounded-md px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider ${tag.bg} ${tag.text}`}
                       >
                         {project.type}
                       </span>
                     )}
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="14"
+                      height="14"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      className="shrink-0 text-muted-foreground/30 opacity-0 group-hover:opacity-100 transition-all duration-200 group-hover:translate-x-0.5"
+                      aria-hidden="true"
+                    >
+                      <path d="M5 12h14" />
+                      <path d="m12 5 7 7-7 7" />
+                    </svg>
                   </div>
-                  <span className="text-muted-foreground text-xs shrink-0 ml-4">
-                    {getRelativeTime(project.updated_at)}
-                  </span>
+                  <h3 className="font-serif text-lg font-normal text-foreground leading-snug line-clamp-2">
+                    {project.title}
+                  </h3>
+                  <p className="text-[11px] text-muted-foreground/50 mt-3">
+                    Edited {getRelativeTime(project.updated_at)}
+                  </p>
                 </Link>
               )
             })}
-          </div>
-          <div className="mt-4">
+
+            {/* New Project card */}
             <Link
               href="/projects/new"
-              className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+              className="group rounded-2xl border-2 border-dashed border-border/40 p-6 flex flex-col items-center justify-center text-sm text-muted-foreground/40 hover:text-muted-foreground/70 hover:border-border/60 hover:bg-white/60 transition-all duration-200 cursor-pointer min-h-[140px]"
             >
-              + New Project
+              <span className="flex items-center justify-center w-10 h-10 rounded-full border-2 border-dashed border-current mb-3 group-hover:scale-110 transition-transform duration-200">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
+              </span>
+              New Project
             </Link>
           </div>
         </section>
       )}
+
+      {/* Empty state: no projects yet */}
+      {(!projects || projects.length === 0) && (
+        <section aria-label="Get started">
+          <Link
+            href="/projects/new"
+            className="rounded-xl border border-dashed border-border/60 p-5 flex items-center justify-center text-sm text-muted-foreground/50 hover:text-muted-foreground hover:border-border hover:bg-accent/30 transition-all duration-200 cursor-pointer"
+          >
+            + New Project
+          </Link>
+        </section>
+      )}
+
     </div>
   )
 }

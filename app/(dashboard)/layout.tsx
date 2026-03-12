@@ -26,7 +26,12 @@ export default async function DashboardLayout({
         <DashboardSidebar userEmail={user.email ?? ''} />
 
         {/* Main content */}
-        <main className="flex-1 overflow-y-auto">
+        <main
+          className="flex-1 overflow-y-auto"
+          style={{
+            background: 'linear-gradient(180deg, #faf8f5 0%, #f5f2ee 50%, #faf8f5 100%)',
+          }}
+        >
           {children}
         </main>
       </div>

@@ -98,7 +98,7 @@ export function WritingEditor({
               onClick={() => saveContent(latestHtmlRef.current)}
               className="text-destructive hover:underline"
             >
-              Save failed — retry
+              Save failed. Retry
             </button>
           )}
         </span>

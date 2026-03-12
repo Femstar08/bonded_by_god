@@ -176,7 +176,7 @@ export const SlashCommands = Extension.create({
                 .chain()
                 .focus()
                 .insertContent(
-                  '<p><em>[ Story / Illustration — begin writing your narrative here... ]</em></p>'
+                  '<p><em>[ Story / Illustration - begin writing your narrative here... ]</em></p>'
                 )
                 .run()
               break
@@ -194,7 +194,7 @@ export const SlashCommands = Extension.create({
                 .chain()
                 .focus()
                 .insertContent(
-                  '<p><em>[ Teaching — explain the principle or truth here... ]</em></p>'
+                  '<p><em>[ Teaching - explain the principle or truth here... ]</em></p>'
                 )
                 .run()
               break

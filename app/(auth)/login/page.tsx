@@ -4,10 +4,6 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 
 export default function LoginPage() {
   const router = useRouter()
@@ -37,54 +33,81 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader>
-          <CardTitle>Welcome to Scriptloom</CardTitle>
-          <CardDescription>Sign in to your account to continue</CardDescription>
-        </CardHeader>
-        <form onSubmit={handleLogin}>
-          <CardContent className="space-y-4">
-            {error && (
-              <div className="rounded-md bg-destructive/15 p-3 text-sm text-destructive">
-                {error}
-              </div>
-            )}
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="you@example.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
-              <Input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-              />
-            </div>
-          </CardContent>
-          <CardFooter className="flex flex-col space-y-4">
-            <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? 'Signing in...' : 'Sign In'}
-            </Button>
-            <p className="text-center text-sm text-muted-foreground">
-              Don't have an account?{' '}
-              <Link href="/signup" className="text-primary hover:underline">
-                Sign up
-              </Link>
-            </p>
-          </CardFooter>
-        </form>
-      </Card>
+    <div className="p-10 bg-white rounded-2xl shadow-sm">
+      {/* Page heading */}
+      <h2 className="font-serif text-3xl font-normal text-foreground mb-2">
+        Welcome back
+      </h2>
+      <p className="text-muted-foreground/60 text-[15px] mb-10">
+        Sign in to continue your writing journey.
+      </p>
+
+      <form onSubmit={handleLogin} className="space-y-6">
+        {/* Error message */}
+        {error && (
+          <div className="text-red-600 text-sm bg-red-50 rounded-lg px-4 py-3">
+            {error}
+          </div>
+        )}
+
+        {/* Email field */}
+        <div>
+          <label
+            htmlFor="email"
+            className="block text-[13px] font-medium text-foreground/80 uppercase tracking-wide mb-2"
+          >
+            Email Address
+          </label>
+          <input
+            id="email"
+            type="email"
+            placeholder="you@example.com"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+            className="w-full rounded-xl border border-border/50 py-3 px-4 text-[15px] bg-white text-foreground placeholder:text-muted-foreground/40 outline-none transition-all focus:ring-2 focus:ring-amber-400/30 focus:border-amber-400/50"
+          />
+        </div>
+
+        {/* Password field */}
+        <div>
+          <label
+            htmlFor="password"
+            className="block text-[13px] font-medium text-foreground/80 uppercase tracking-wide mb-2"
+          >
+            Password
+          </label>
+          <input
+            id="password"
+            type="password"
+            placeholder="••••••••"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+            className="w-full rounded-xl border border-border/50 py-3 px-4 text-[15px] bg-white text-foreground placeholder:text-muted-foreground/40 outline-none transition-all focus:ring-2 focus:ring-amber-400/30 focus:border-amber-400/50"
+          />
+        </div>
+
+        {/* Submit button */}
+        <button
+          type="submit"
+          disabled={loading}
+          className="w-full rounded-xl py-3 text-[15px] font-semibold text-white transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+          style={{ background: loading ? '#1a2d4d' : '#0f1a2e' }}
+          onMouseEnter={(e) => { if (!loading) e.currentTarget.style.background = '#1a2d4d' }}
+          onMouseLeave={(e) => { if (!loading) e.currentTarget.style.background = '#0f1a2e' }}
+        >
+          {loading ? 'Signing in...' : 'Sign In'}
+        </button>
+      </form>
+
+      {/* Footer link */}
+      <p className="text-center text-sm text-muted-foreground/70 mt-8">
+        Don&apos;t have an account?{' '}
+        <Link href="/signup" className="text-amber-600 hover:text-amber-700 font-medium transition-colors">
+          Create one
+        </Link>
+      </p>
     </div>
   )
 }

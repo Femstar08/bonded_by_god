@@ -113,35 +113,41 @@ export function StyleTraining({ userId, projects }: StyleTrainingProps) {
   const activeProfile = styleData || existingProfile
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-8">
+
+      {/* Section header */}
       <div>
-        <h3 className="font-semibold text-sm">Train Scriptloom on Your Writing Style</h3>
-        <p className="text-xs text-muted-foreground mt-1">
+        <h3 className="text-[15px] font-medium text-foreground">
+          Train Scriptloom on Your Writing Style
+        </h3>
+        <p className="text-[13px] text-muted-foreground/60 mt-1">
           Paste samples of your writing so the AI can match your voice, tone, and rhythm.
         </p>
       </div>
 
       {/* Scope selector */}
-      <div className="space-y-2">
-        <Label className="text-xs font-medium">Apply style to:</Label>
-        <div className="flex items-center gap-4">
-          <label className="flex items-center gap-2 text-sm cursor-pointer">
+      <div className="space-y-3">
+        <Label className="text-[11px] uppercase tracking-[0.15em] font-semibold text-muted-foreground/50">
+          Apply style to
+        </Label>
+        <div className="flex items-center gap-6">
+          <label className="flex items-center gap-2.5 text-[14px] text-foreground cursor-pointer">
             <input
               type="radio"
               name="scope"
               checked={scope === 'user'}
               onChange={() => setScope('user')}
-              className="accent-amber-600"
+              className="accent-amber-600 w-4 h-4"
             />
             My entire account
           </label>
-          <label className="flex items-center gap-2 text-sm cursor-pointer">
+          <label className="flex items-center gap-2.5 text-[14px] text-foreground cursor-pointer">
             <input
               type="radio"
               name="scope"
               checked={scope === 'project'}
               onChange={() => setScope('project')}
-              className="accent-amber-600"
+              className="accent-amber-600 w-4 h-4"
             />
             This project only
           </label>
@@ -150,7 +156,7 @@ export function StyleTraining({ userId, projects }: StyleTrainingProps) {
           <select
             value={selectedProjectId}
             onChange={(e) => setSelectedProjectId(e.target.value)}
-            className="w-full rounded-md border border-border bg-background px-3 py-1.5 text-sm"
+            className="w-full rounded-xl border border-border/50 bg-background px-4 py-2.5 text-[14px] text-foreground focus:outline-none focus:ring-2 focus:ring-amber-500/30 transition"
           >
             {projects.map((p) => (
               <option key={p.id} value={p.id}>
@@ -162,17 +168,21 @@ export function StyleTraining({ userId, projects }: StyleTrainingProps) {
       </div>
 
       {/* Writing samples */}
-      <div className="space-y-3">
-        <Label className="text-xs font-medium">Writing Samples</Label>
+      <div className="space-y-4">
+        <Label className="text-[11px] uppercase tracking-[0.15em] font-semibold text-muted-foreground/50">
+          Writing Samples
+        </Label>
         {samples.map((sample, i) => (
-          <div key={i} className="space-y-1">
+          <div key={i} className="space-y-2">
             <div className="flex items-center justify-between">
-              <span className="text-xs text-muted-foreground">Sample {i + 1}</span>
+              <span className="text-[12px] text-muted-foreground/60 font-medium">
+                Sample {i + 1}
+              </span>
               {samples.length > 1 && (
                 <button
                   type="button"
                   onClick={() => removeSample(i)}
-                  className="text-xs text-muted-foreground hover:text-destructive transition-colors"
+                  className="text-[12px] text-muted-foreground/50 hover:text-destructive transition-colors font-medium"
                 >
                   Remove
                 </button>
@@ -183,42 +193,50 @@ export function StyleTraining({ userId, projects }: StyleTrainingProps) {
               onChange={(e) => updateSample(i, e.target.value)}
               placeholder="Paste a sample of your writing here (at least 50 characters)..."
               rows={6}
-              className="text-sm resize-y"
+              className="text-[14px] resize-y rounded-xl border-border/50 focus:ring-amber-500/30"
             />
           </div>
         ))}
         <button
           type="button"
           onClick={addSample}
-          className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+          className="text-sm text-amber-600 hover:text-amber-700 font-medium transition-colors"
         >
           + Add another sample
         </button>
       </div>
 
-      {/* Analyze button */}
-      <Button
-        onClick={handleAnalyze}
-        disabled={analyzing}
-        className="bg-amber-600 hover:bg-amber-700 text-white"
-      >
-        {analyzing ? 'Analyzing...' : 'Analyze My Writing Style'}
-      </Button>
-
       {/* Message */}
       {message && (
-        <p className={`text-xs ${message.type === 'error' ? 'text-destructive' : 'text-green-600'}`}>
+        <div
+          className={`rounded-lg px-4 py-3 text-[13px] font-medium ${
+            message.type === 'error'
+              ? 'bg-red-50 text-red-700 border border-red-100'
+              : 'bg-green-50 text-green-700 border border-green-100'
+          }`}
+        >
           {message.text}
-        </p>
+        </div>
       )}
+
+      {/* Analyze button */}
+      <button
+        type="button"
+        onClick={handleAnalyze}
+        disabled={analyzing}
+        className="bg-[#0f1a2e] hover:bg-[#1a2d4d] disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-xl py-3 w-full text-[15px] font-semibold transition-colors"
+      >
+        {analyzing ? 'Analyzing...' : 'Analyze My Writing Style'}
+      </button>
 
       {/* Style profile preview */}
       {activeProfile && (
-        <div className="rounded-md border border-border/50 bg-muted/20 p-4 space-y-3">
-          <h4 className="text-sm font-medium">
+        <div className="rounded-2xl bg-muted/20 border border-border/40 p-6 space-y-6">
+          <p className="text-[11px] uppercase tracking-[0.2em] font-semibold text-muted-foreground/50">
             {styleData ? 'Analyzed Style Profile' : 'Current Style Profile'}
-          </h4>
-          <div className="grid gap-2 text-xs">
+          </p>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
             <StyleRow label="Tone" value={activeProfile.tone} />
             <StyleRow label="Voice" value={activeProfile.voice} />
             <StyleRow label="Sentence Structure" value={activeProfile.sentenceStructure} />
@@ -227,23 +245,29 @@ export function StyleTraining({ userId, projects }: StyleTrainingProps) {
             <StyleRow label="Vocabulary" value={activeProfile.vocabularyStyle} />
             <StyleRow label="Patterns" value={activeProfile.writingPatterns} />
           </div>
-          <div className="pt-2 border-t border-border/30">
-            <p className="text-xs text-muted-foreground italic">{activeProfile.styleSummary}</p>
-          </div>
+
+          {activeProfile.styleSummary && (
+            <div className="pt-5 border-t border-border/30">
+              <p className="text-[13px] text-muted-foreground/70 italic leading-relaxed">
+                {activeProfile.styleSummary}
+              </p>
+            </div>
+          )}
 
           {/* Save button — only show if we have a new analysis */}
           {styleData && (
-            <Button
+            <button
+              type="button"
               onClick={handleSave}
               disabled={saving}
-              size="sm"
-              className="bg-amber-600 hover:bg-amber-700 text-white"
+              className="bg-[#0f1a2e] hover:bg-[#1a2d4d] disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-xl py-2.5 px-6 text-[14px] font-semibold transition-colors"
             >
               {saving ? 'Saving...' : 'Save Style Profile'}
-            </Button>
+            </button>
           )}
         </div>
       )}
+
     </div>
   )
 }
@@ -251,9 +275,11 @@ export function StyleTraining({ userId, projects }: StyleTrainingProps) {
 function StyleRow({ label, value }: { label: string; value: string }) {
   if (!value) return null
   return (
-    <div className="flex gap-2">
-      <span className="font-medium text-muted-foreground w-32 shrink-0">{label}:</span>
-      <span className="text-foreground">{value}</span>
+    <div className="space-y-1">
+      <p className="text-[11px] uppercase tracking-wider text-muted-foreground/50 font-semibold">
+        {label}
+      </p>
+      <p className="text-[15px] text-foreground">{value}</p>
     </div>
   )
 }

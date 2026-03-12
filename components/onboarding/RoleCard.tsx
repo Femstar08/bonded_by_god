@@ -1,7 +1,6 @@
 'use client'
 
 import React from 'react'
-import { Button } from '@/components/ui/button'
 
 interface RoleCardProps {
   icon: React.ReactNode
@@ -26,18 +25,19 @@ export function RoleCard({ icon, title, description, selected, onSelect }: RoleC
         }
       }}
       className={[
-        'group relative flex flex-col items-center gap-3 rounded-xl p-5 cursor-pointer transition-all duration-200 outline-none',
-        'bg-white/90 backdrop-blur-sm shadow-md',
-        'hover:shadow-lg hover:-translate-y-0.5',
-        'focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-2',
+        'group relative flex flex-col items-center rounded-2xl border-2 p-6 text-center cursor-pointer transition-all duration-200 outline-none',
+        'focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:ring-offset-2',
         selected
-          ? 'border-2 border-amber-500 shadow-amber-200 shadow-lg -translate-y-0.5'
-          : 'border border-white/60',
+          ? 'border-amber-400 bg-amber-50/30 shadow-lg shadow-amber-400/10'
+          : 'border-border/40 bg-white hover:border-border/80 hover:shadow-lg hover:shadow-black/[0.03]',
       ].join(' ')}
     >
-      {/* Selected indicator */}
+      {/* Selected checkmark badge */}
       {selected && (
-        <span className="absolute top-3 right-3 flex h-5 w-5 items-center justify-center rounded-full bg-amber-500">
+        <span
+          className="absolute top-3 right-3 flex h-5 w-5 items-center justify-center rounded-full bg-amber-400"
+          aria-hidden="true"
+        >
           <svg
             className="h-3 w-3 text-white"
             fill="none"
@@ -54,10 +54,10 @@ export function RoleCard({ icon, title, description, selected, onSelect }: RoleC
       {/* Icon */}
       <div
         className={[
-          'flex h-12 w-12 items-center justify-center rounded-full transition-colors duration-200',
+          'text-3xl mb-3 flex h-12 w-12 items-center justify-center rounded-full transition-colors duration-200',
           selected
             ? 'bg-amber-100 text-amber-600'
-            : 'bg-slate-100 text-slate-600 group-hover:bg-amber-50 group-hover:text-amber-600',
+            : 'bg-muted/50 text-muted-foreground group-hover:bg-amber-50 group-hover:text-amber-600',
         ].join(' ')}
         aria-hidden="true"
       >
@@ -65,36 +65,14 @@ export function RoleCard({ icon, title, description, selected, onSelect }: RoleC
       </div>
 
       {/* Text content */}
-      <div className="flex flex-col items-center gap-1.5 text-center">
-        <h3
-          className={[
-            'text-sm font-bold leading-tight transition-colors duration-200',
-            selected ? 'text-slate-900' : 'text-slate-800',
-          ].join(' ')}
-        >
+      <div className="flex flex-col items-center">
+        <h3 className="font-serif text-lg font-normal text-foreground leading-tight">
           {title}
         </h3>
-        <p className="text-xs leading-snug text-slate-500 line-clamp-3">{description}</p>
+        <p className="text-[13px] text-muted-foreground/60 mt-1 leading-snug line-clamp-3">
+          {description}
+        </p>
       </div>
-
-      {/* Select Toolkit button */}
-      <Button
-        type="button"
-        size="sm"
-        onClick={(e) => {
-          e.stopPropagation()
-          onSelect()
-        }}
-        className={[
-          'mt-1 w-full text-xs font-semibold transition-all duration-200',
-          selected
-            ? 'bg-amber-600 text-white hover:bg-amber-700'
-            : 'bg-amber-500 text-white hover:bg-amber-600',
-        ].join(' ')}
-        aria-label={selected ? `${title} selected` : `Select ${title} toolkit`}
-      >
-        {selected ? 'Toolkit Selected' : 'Select Toolkit'}
-      </Button>
     </div>
   )
 }

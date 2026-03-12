@@ -2,12 +2,11 @@
 
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import { NoteCard } from '@/components/notes/NoteCard'
 import { NoteDialog } from '@/components/notes/NoteDialog'
 import { NoteDetail } from '@/components/notes/NoteDetail'
 import { Note } from '@/types/database'
+import { Search } from 'lucide-react'
 
 export default function NotesPage() {
   const [notes, setNotes] = useState<Note[]>([])
@@ -136,47 +135,77 @@ export default function NotesPage() {
   ).sort()
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="max-w-4xl mx-auto px-10 py-12">
+
+      {/* Page header */}
+      <div className="flex items-start justify-between mb-10">
         <div>
-          <h1 className="text-3xl font-bold">Notes</h1>
-          <p className="text-muted-foreground">Store and organize your sermon and church notes</p>
+          <h1 className="font-serif text-4xl font-normal tracking-tight text-foreground">
+            Notes Vault
+          </h1>
+          <p className="text-muted-foreground/60 text-[15px] mt-3">
+            Store and organise your sermon notes, reflections, and church teachings
+          </p>
         </div>
-        <Button onClick={handleNewNote} className="bg-amber-600 hover:bg-amber-700 text-white">Add New Note</Button>
+        <button
+          onClick={handleNewNote}
+          className="bg-[#0f1a2e] hover:bg-[#1a2d4d] text-white rounded-xl px-6 py-2.5 text-sm font-semibold transition-colors duration-200 shrink-0 mt-1"
+        >
+          New Note
+        </button>
       </div>
 
-      <div className="flex flex-col gap-4 md:flex-row">
-        <div className="flex-1">
-          <Input
-            placeholder="Search notes..."
+      {/* Search and tag filters */}
+      <div className="space-y-4 mb-8">
+        {/* Search */}
+        <div className="relative">
+          <Search
+            className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground/40 pointer-events-none"
+            size={16}
+          />
+          <input
+            type="text"
+            placeholder="Search notes by title, content, or tag…"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full"
+            className="w-full rounded-xl border border-border/50 bg-white py-3 px-4 pl-10 text-[15px] text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:ring-2 focus:ring-amber-400/30 transition-shadow"
           />
         </div>
+
+        {/* Tag filter pills */}
         {allTags.length > 0 && (
-          <div className="flex flex-wrap gap-2">
-            <Button
-              variant={selectedTag === null ? 'default' : 'outline'}
-              size="sm"
+          <div className="flex flex-wrap gap-2 items-center">
+            <span className="text-[11px] uppercase tracking-[0.2em] font-semibold text-muted-foreground/50 mr-1">
+              Filter
+            </span>
+            <button
               onClick={() => setSelectedTag(null)}
+              className={`rounded-full px-3 py-1.5 text-[12px] font-medium transition-colors duration-150 ${
+                selectedTag === null
+                  ? 'bg-[#0f1a2e] text-white'
+                  : 'bg-white border border-border/50 text-muted-foreground hover:border-border'
+              }`}
             >
               All
-            </Button>
+            </button>
             {allTags.map((tag) => (
-              <Button
+              <button
                 key={tag}
-                variant={selectedTag === tag ? 'default' : 'outline'}
-                size="sm"
                 onClick={() => setSelectedTag(selectedTag === tag ? null : tag)}
+                className={`rounded-full px-3 py-1.5 text-[12px] font-medium transition-colors duration-150 ${
+                  selectedTag === tag
+                    ? 'bg-[#0f1a2e] text-white'
+                    : 'bg-white border border-border/50 text-muted-foreground hover:border-border'
+                }`}
               >
                 {tag}
-              </Button>
+              </button>
             ))}
           </div>
         )}
       </div>
 
+      {/* Content area */}
       {viewingNote ? (
         <NoteDetail
           note={viewingNote}
@@ -188,9 +217,11 @@ export default function NotesPage() {
           }}
         />
       ) : loading ? (
-        <div className="text-center py-12 text-muted-foreground">Loading notes...</div>
+        <div className="text-center py-16 text-muted-foreground/50 text-[15px]">
+          Loading notes…
+        </div>
       ) : filteredNotes.length > 0 ? (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {filteredNotes.map((note) => (
             <NoteCard
               key={note.id}
@@ -202,14 +233,19 @@ export default function NotesPage() {
           ))}
         </div>
       ) : (
-        <div className="flex flex-col items-center justify-center py-12 text-center">
-          <p className="text-lg text-muted-foreground mb-4">
+        <div className="flex flex-col items-center justify-center py-20 text-center border-2 border-dashed border-border/40 rounded-2xl">
+          <p className="text-[15px] text-muted-foreground/50 mb-5">
             {notes.length === 0
-              ? 'Your vault is empty — add your first sermon notes'
+              ? 'Your vault is empty. Add your first sermon notes'
               : 'No notes match your search'}
           </p>
           {notes.length === 0 && (
-            <Button onClick={handleNewNote} className="bg-amber-600 hover:bg-amber-700 text-white">Add Your First Note</Button>
+            <button
+              onClick={handleNewNote}
+              className="bg-[#0f1a2e] hover:bg-[#1a2d4d] text-white rounded-xl px-6 py-2.5 text-sm font-semibold transition-colors duration-200"
+            >
+              Add Your First Note
+            </button>
           )}
         </div>
       )}

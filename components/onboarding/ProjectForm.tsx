@@ -1,7 +1,6 @@
 'use client'
 
 import React, { useState, useTransition } from 'react'
-import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import {
@@ -101,200 +100,216 @@ export function ProjectForm({ role, onBack, onSubmit }: ProjectFormProps) {
     })
   }
 
+  // Shared input class
+  const inputClass = [
+    'rounded-xl border-border/50 py-3 px-4 text-[15px]',
+    'focus-visible:ring-2 focus-visible:ring-amber-400/30 focus-visible:border-amber-400',
+  ].join(' ')
+
   return (
-    <div className="mx-auto w-full max-w-xl">
-      {/* Card */}
-      <div className="rounded-2xl bg-white/90 backdrop-blur-sm shadow-xl border border-white/60 overflow-hidden">
-        {/* Card header */}
-        <div className="bg-gradient-to-r from-slate-800 to-slate-700 px-8 py-6">
-          <p className="text-xs font-semibold uppercase tracking-widest text-amber-400 mb-1">
-            Step 2 of 2
-          </p>
-          <h2 className="text-2xl font-serif font-bold text-white">Set Up Your Project</h2>
-          <p className="mt-1 text-sm text-slate-300">
-            Toolkit:{' '}
-            <span className="font-medium text-amber-300">{roleLabel}</span>
-          </p>
+    <div className="mx-auto w-full max-w-lg">
+      {/* Role context badge */}
+      <div className="mb-8 flex items-center gap-2">
+        <span className="text-[13px] font-medium text-foreground/50 uppercase tracking-wide">
+          Toolkit:
+        </span>
+        <span className="rounded-full bg-amber-50 border border-amber-200 px-3 py-0.5 text-[13px] font-medium text-amber-700">
+          {roleLabel}
+        </span>
+      </div>
+
+      <form onSubmit={handleSubmit} noValidate className="space-y-6">
+        {/* Server error banner */}
+        {serverError && (
+          <div
+            role="alert"
+            className="rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-600"
+          >
+            {serverError}
+          </div>
+        )}
+
+        {/* Project Title */}
+        <div>
+          <Label
+            htmlFor="title"
+            className="block text-[13px] font-medium text-foreground/70 uppercase tracking-wide mb-2"
+          >
+            Project Title <span className="text-red-500 normal-case" aria-hidden="true">*</span>
+          </Label>
+          <Input
+            id="title"
+            name="title"
+            type="text"
+            required
+            placeholder="e.g. Walking in Grace, Sunday Sermon Series"
+            aria-describedby={titleError ? 'title-error' : undefined}
+            aria-invalid={!!titleError}
+            className={[
+              inputClass,
+              titleError ? 'border-red-400 focus-visible:ring-red-400/30' : '',
+            ].join(' ')}
+            onChange={() => titleError && setTitleError(null)}
+          />
+          {titleError && (
+            <p id="title-error" role="alert" className="text-red-500 text-[12px] mt-1">
+              {titleError}
+            </p>
+          )}
         </div>
 
-        {/* Form body */}
-        <form onSubmit={handleSubmit} noValidate className="px-8 py-7 space-y-5">
-          {/* Server error banner */}
-          {serverError && (
-            <div
-              role="alert"
-              className="rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700"
-            >
-              {serverError}
-            </div>
-          )}
-
-          {/* Project Title */}
-          <div className="space-y-1.5">
-            <Label htmlFor="title" className="text-slate-800 font-semibold">
-              Project Title <span className="text-red-500" aria-hidden="true">*</span>
-            </Label>
-            <Input
-              id="title"
-              name="title"
-              type="text"
-              required
-              placeholder="e.g. Walking in Grace, Sunday Sermon Series"
-              aria-describedby={titleError ? 'title-error' : undefined}
-              aria-invalid={!!titleError}
+        {/* Project Type */}
+        <div>
+          <Label
+            htmlFor="type-trigger"
+            className="block text-[13px] font-medium text-foreground/70 uppercase tracking-wide mb-2"
+          >
+            Project Type <span className="text-red-500 normal-case" aria-hidden="true">*</span>
+          </Label>
+          <Select
+            value={projectType}
+            onValueChange={(val) => {
+              setProjectType(val)
+              if (typeError) setTypeError(null)
+            }}
+          >
+            <SelectTrigger
+              id="type-trigger"
               className={[
-                'bg-white border-slate-200 text-slate-900 placeholder:text-slate-400',
-                'focus-visible:border-amber-500 focus-visible:ring-amber-500/30',
-                titleError ? 'border-red-400' : '',
+                inputClass,
+                'w-full',
+                typeError ? 'border-red-400 focus-visible:ring-red-400/30' : '',
               ].join(' ')}
-              onChange={() => titleError && setTitleError(null)}
-            />
-            {titleError && (
-              <p id="title-error" role="alert" className="text-xs text-red-600">
-                {titleError}
-              </p>
-            )}
-          </div>
-
-          {/* Project Type */}
-          <div className="space-y-1.5">
-            <Label htmlFor="type-trigger" className="text-slate-800 font-semibold">
-              Project Type <span className="text-red-500" aria-hidden="true">*</span>
-            </Label>
-            <Select
-              value={projectType}
-              onValueChange={(val) => {
-                setProjectType(val)
-                if (typeError) setTypeError(null)
-              }}
+              aria-describedby={typeError ? 'type-error' : undefined}
+              aria-invalid={!!typeError}
             >
-              <SelectTrigger
-                id="type-trigger"
-                className={[
-                  'w-full bg-white border-slate-200 text-slate-900',
-                  'focus-visible:border-amber-500 focus-visible:ring-amber-500/30',
-                  typeError ? 'border-red-400' : '',
-                ].join(' ')}
-                aria-describedby={typeError ? 'type-error' : undefined}
-                aria-invalid={!!typeError}
-              >
-                <SelectValue placeholder="Select a project type" />
-              </SelectTrigger>
-              <SelectContent>
-                {PROJECT_TYPES.map(({ value, label }) => (
-                  <SelectItem key={value} value={value}>
-                    {label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {typeError && (
-              <p id="type-error" role="alert" className="text-xs text-red-600">
-                {typeError}
-              </p>
+              <SelectValue placeholder="Select a project type" />
+            </SelectTrigger>
+            <SelectContent>
+              {PROJECT_TYPES.map(({ value, label }) => (
+                <SelectItem key={value} value={value}>
+                  {label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {typeError && (
+            <p id="type-error" role="alert" className="text-red-500 text-[12px] mt-1">
+              {typeError}
+            </p>
+          )}
+        </div>
+
+        {/* Audience */}
+        <div>
+          <Label
+            htmlFor="audience"
+            className="block text-[13px] font-medium text-foreground/70 uppercase tracking-wide mb-2"
+          >
+            Audience{' '}
+            <span className="font-normal text-foreground/40 normal-case text-[12px]">(optional)</span>
+          </Label>
+          <Input
+            id="audience"
+            name="audience"
+            type="text"
+            placeholder="e.g. Young adults, My congregation"
+            className={inputClass}
+          />
+        </div>
+
+        {/* Tone */}
+        <div>
+          <Label
+            htmlFor="tone-trigger"
+            className="block text-[13px] font-medium text-foreground/70 uppercase tracking-wide mb-2"
+          >
+            Tone{' '}
+            <span className="font-normal text-foreground/40 normal-case text-[12px]">(optional)</span>
+          </Label>
+          <Select value={tone} onValueChange={setTone}>
+            <SelectTrigger
+              id="tone-trigger"
+              className={['w-full', inputClass].join(' ')}
+            >
+              <SelectValue placeholder="Select a tone" />
+            </SelectTrigger>
+            <SelectContent>
+              {TONE_OPTIONS.map(({ value, label }) => (
+                <SelectItem key={value} value={value}>
+                  {label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        {/* Scripture Focus */}
+        <div>
+          <Label
+            htmlFor="scripture_focus"
+            className="block text-[13px] font-medium text-foreground/70 uppercase tracking-wide mb-2"
+          >
+            Scripture Focus{' '}
+            <span className="font-normal text-foreground/40 normal-case text-[12px]">(optional)</span>
+          </Label>
+          <Input
+            id="scripture_focus"
+            name="scripture_focus"
+            type="text"
+            placeholder="e.g. John 15, Love and covenant"
+            className={inputClass}
+          />
+        </div>
+
+        {/* Actions */}
+        <div className="pt-2 space-y-3">
+          <button
+            type="submit"
+            disabled={isPending}
+            className="bg-[#0f1a2e] hover:bg-[#1a2d4d] text-white rounded-xl py-3 w-full text-[15px] font-semibold transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+          >
+            {isPending ? (
+              <>
+                <svg
+                  className="h-4 w-4 animate-spin"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  aria-hidden="true"
+                >
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  />
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                  />
+                </svg>
+                Creating Project...
+              </>
+            ) : (
+              'Create Project'
             )}
-          </div>
+          </button>
 
-          {/* Audience */}
-          <div className="space-y-1.5">
-            <Label htmlFor="audience" className="text-slate-800 font-semibold">
-              Audience{' '}
-              <span className="font-normal text-slate-400 text-xs">(optional)</span>
-            </Label>
-            <Input
-              id="audience"
-              name="audience"
-              type="text"
-              placeholder="e.g. Young adults, My congregation"
-              className="bg-white border-slate-200 text-slate-900 placeholder:text-slate-400 focus-visible:border-amber-500 focus-visible:ring-amber-500/30"
-            />
-          </div>
-
-          {/* Tone */}
-          <div className="space-y-1.5">
-            <Label htmlFor="tone-trigger" className="text-slate-800 font-semibold">
-              Tone{' '}
-              <span className="font-normal text-slate-400 text-xs">(optional)</span>
-            </Label>
-            <Select value={tone} onValueChange={setTone}>
-              <SelectTrigger
-                id="tone-trigger"
-                className="w-full bg-white border-slate-200 text-slate-900 focus-visible:border-amber-500 focus-visible:ring-amber-500/30"
-              >
-                <SelectValue placeholder="Select a tone" />
-              </SelectTrigger>
-              <SelectContent>
-                {TONE_OPTIONS.map(({ value, label }) => (
-                  <SelectItem key={value} value={value}>
-                    {label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Scripture Focus */}
-          <div className="space-y-1.5">
-            <Label htmlFor="scripture_focus" className="text-slate-800 font-semibold">
-              Scripture Focus{' '}
-              <span className="font-normal text-slate-400 text-xs">(optional)</span>
-            </Label>
-            <Input
-              id="scripture_focus"
-              name="scripture_focus"
-              type="text"
-              placeholder="e.g. John 15, Love and covenant"
-              className="bg-white border-slate-200 text-slate-900 placeholder:text-slate-400 focus-visible:border-amber-500 focus-visible:ring-amber-500/30"
-            />
-          </div>
-
-          {/* Actions */}
-          <div className="flex items-center justify-between pt-2 gap-3">
-            <Button
+          <div className="flex justify-center">
+            <button
               type="button"
-              variant="outline"
               onClick={onBack}
               disabled={isPending}
-              className="border-slate-300 text-slate-700 hover:bg-slate-50 hover:text-slate-900"
+              className="text-muted-foreground hover:text-foreground text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 rounded px-1 disabled:opacity-40"
             >
               Back
-            </Button>
-            <Button
-              type="submit"
-              disabled={isPending}
-              className="flex-1 bg-amber-600 text-white font-semibold hover:bg-amber-700 disabled:opacity-60"
-            >
-              {isPending ? (
-                <span className="flex items-center gap-2">
-                  <svg
-                    className="h-4 w-4 animate-spin"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    aria-hidden="true"
-                  >
-                    <circle
-                      className="opacity-25"
-                      cx="12"
-                      cy="12"
-                      r="10"
-                      stroke="currentColor"
-                      strokeWidth="4"
-                    />
-                    <path
-                      className="opacity-75"
-                      fill="currentColor"
-                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-                    />
-                  </svg>
-                  Creating Project...
-                </span>
-              ) : (
-                'Create Project'
-              )}
-            </Button>
+            </button>
           </div>
-        </form>
-      </div>
+        </div>
+      </form>
     </div>
   )
 }

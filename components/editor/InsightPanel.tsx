@@ -398,7 +398,7 @@ function SuggestionsTab({ editorContent, onAction }: SuggestionsTabProps) {
   if (hasNoSuggestion) {
     return (
       <p className="py-4 text-sm text-muted-foreground italic">
-        Keep writing — suggestions will appear after a meaningful paragraph.
+        Keep writing. Suggestions will appear after a meaningful paragraph.
       </p>
     )
   }
@@ -650,7 +650,7 @@ function ToolsTab({ editorContent, projectContext, onApplyResult }: ToolsTabProp
       {textResult && lastTool && isTextTool(lastTool) && (
         <div className="space-y-2 rounded-md border border-amber-200 bg-amber-50/40 p-3">
           <p className="text-xs font-medium text-amber-700">
-            {toolLabels[lastTool]} result — preview before applying
+            {toolLabels[lastTool]} result. Preview before applying
           </p>
           <div className="max-h-48 overflow-y-auto rounded-md bg-background/80 p-3 text-sm leading-relaxed whitespace-pre-wrap font-serif border border-border">
             {textResult}
@@ -757,7 +757,7 @@ function ScriptureTab({ editorContent, projectContext }: ScriptureTabProps) {
   }
 
   const handleCopy = async (verse: Verse, index: number) => {
-    const text = `${verse.reference} — "${verse.text}"`
+    const text = `${verse.reference} - "${verse.text}"`
     await navigator.clipboard.writeText(text)
     setCopiedIndex(index)
     setTimeout(() => setCopiedIndex(null), 2000)

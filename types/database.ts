@@ -126,3 +126,24 @@ export type StyleProfile = {
   created_at: string
   updated_at: string
 }
+
+export type ProjectBibleCategory =
+  | 'theological_positions'
+  | 'themes'
+  | 'key_figures'
+  | 'core_scriptures'
+  | 'audience_profile'
+  | 'tone_voice_notes'
+  | 'custom_notes'
+
+export type ProjectBibleEntry = {
+  id: string
+  project_id: string
+  category: ProjectBibleCategory
+  title: string
+  content: string
+  scripture_refs: string[]
+  sort_order: number
+  created_at: string
+  updated_at: string
+}

@@ -42,7 +42,7 @@ const TEAM_MEMBERS: TeamMember[] = [
     initial: 'S',
     name: 'The Scribe',
     role: 'Writing & Generation',
-    description: 'Expand or generate writing — adds depth, detail, and momentum to your words.',
+    description: 'Expand or generate writing. Adds depth, detail, and momentum to your words.',
     action: 'expand',
     avatarBg: 'bg-amber-100',
     avatarText: 'text-amber-800',
@@ -51,7 +51,7 @@ const TEAM_MEMBERS: TeamMember[] = [
     initial: 'I',
     name: 'The Interpreter',
     role: 'Scripture & Meaning',
-    description: 'Find and explain scripture — surfaces the right passage for what you are writing.',
+    description: 'Find and explain scripture. Surfaces the right passage for what you are writing.',
     action: 'find_scripture',
     avatarBg: 'bg-blue-100',
     avatarText: 'text-blue-800',
@@ -60,7 +60,7 @@ const TEAM_MEMBERS: TeamMember[] = [
     initial: 'R',
     name: 'The Refiner',
     role: 'Clarity & Flow',
-    description: 'Improve clarity and flow — shapes your draft into polished, readable prose.',
+    description: 'Improve clarity and flow. Shapes your draft into polished, readable prose.',
     action: 'revise',
     avatarBg: 'bg-emerald-100',
     avatarText: 'text-emerald-800',
@@ -69,7 +69,7 @@ const TEAM_MEMBERS: TeamMember[] = [
     initial: 'Sh',
     name: 'The Shepherd',
     role: 'Spiritual Tone',
-    description: 'Spiritual tone and reflection — keeps your writing grounded in faith and purpose.',
+    description: 'Spiritual tone and reflection. Keeps your writing grounded in faith and purpose.',
     action: 'spiritual_check',
     avatarBg: 'bg-violet-100',
     avatarText: 'text-violet-800',
@@ -78,7 +78,7 @@ const TEAM_MEMBERS: TeamMember[] = [
     initial: 'Re',
     name: 'The Researcher',
     role: 'Theology & Context',
-    description: 'Theological background and context — deepens your writing with grounded insight.',
+    description: 'Theological background and context. Deepens your writing with grounded insight.',
     action: 'research',
     avatarBg: 'bg-rose-100',
     avatarText: 'text-rose-800',
@@ -87,7 +87,7 @@ const TEAM_MEMBERS: TeamMember[] = [
     initial: 'G',
     name: 'The Guide',
     role: 'Direction & Prompts',
-    description: 'Writing direction and prompts — helps you decide what to write next and how.',
+    description: 'Writing direction and prompts. Helps you decide what to write next and how.',
     action: 'guide',
     avatarBg: 'bg-orange-100',
     avatarText: 'text-orange-800',
@@ -280,7 +280,7 @@ export function WritingTeamDrawer({
         <div className="px-4 pt-4 pb-2 shrink-0">
           <p className="text-xs text-muted-foreground leading-relaxed">
             Choose a member of your writing team. Each one brings a different
-            gift to your work — select the voice you need right now.
+            gift to your work. Select the voice you need right now.
           </p>
         </div>
 

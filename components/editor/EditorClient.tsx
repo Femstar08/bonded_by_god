@@ -9,7 +9,9 @@ import type { MemoryContext } from '@/lib/memory/inject'
 import { WritingEditor } from './WritingEditor'
 import { InsightPanel } from './InsightPanel'
 import { InsightMarkers } from './InsightMarkers'
+import { ProjectBiblePanel } from './ProjectBiblePanel'
 import { ExportModal } from './ExportModal'
+import { RepurposeModal } from './RepurposeModal'
 import { PrayerPromptModal } from './PrayerPromptModal'
 import { WritingJourney } from './WritingJourney'
 import { WritingTeamDrawer } from './WritingTeamDrawer'
@@ -34,14 +36,24 @@ export function EditorClient({ project, initialChapters, showPrayerPrompt, initi
   const [wordCount, setWordCount] = useState(() => countWords(initialChapters[0]?.content))
   const [teamOpen, setTeamOpen] = useState(false)
   const [exportOpen, setExportOpen] = useState(false)
+  const [repurposeOpen, setRepurposeOpen] = useState(false)
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [memoryContext, setMemoryContext] = useState<MemoryContext | null>(null)
   const [chapterMemories, setChapterMemories] = useState<ChapterMemory[]>(initialChapterMemories)
   const [sectionsByChapter, setSectionsByChapter] = useState<Record<string, Section[]>>(initialSections)
   const [activeSectionTitle, setActiveSectionTitle] = useState<string | null>(null)
   const [focusMode, setFocusMode] = useState(false)
+  const [rightTab, setRightTab] = useState<'insights' | 'bible'>('insights')
 
   const activeChapter = chapters.find((c) => c.id === activeChapterId)
+
+  // Total word count across all chapters (for Project Bible auto-extract threshold)
+  const totalChapterWords = useMemo(() => {
+    return chapters.reduce((sum, ch) => {
+      const text = (ch.content || '').replace(/<[^>]*>/g, '')
+      return sum + text.split(/\s+/).filter(Boolean).length
+    }, 0)
+  }, [chapters])
 
   const lastMemoryWordCount = chapterMemories.find(
     (m) => m.chapter_id === activeChapterId
@@ -347,6 +359,21 @@ export function EditorClient({ project, initialChapters, showPrayerPrompt, initi
                     type="button"
                     variant="ghost"
                     size="sm"
+                    onClick={() => setRepurposeOpen(true)}
+                    disabled={wordCount < 100}
+                    title={wordCount < 100 ? 'Add at least 100 words before repurposing' : 'Repurpose this chapter'}
+                    className="gap-1.5 text-muted-foreground hover:text-foreground"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="size-3.5" aria-hidden="true">
+                      <path fillRule="evenodd" d="M15.312 11.424a5.5 5.5 0 0 1-9.201 2.466l-.312-.311h2.433a.75.75 0 0 0 0-1.5H4.598a.75.75 0 0 0-.75.75v3.634a.75.75 0 0 0 1.5 0v-2.033l.312.311a7 7 0 0 0 11.712-3.138.75.75 0 0 0-1.449-.39Zm-1.624-8.848a.75.75 0 0 0-1.5 0v2.033l-.312-.312A7 7 0 0 0 .164 7.436a.75.75 0 0 0 1.45.388 5.5 5.5 0 0 1 9.2-2.467l.313.312H8.694a.75.75 0 0 0 0 1.5h3.634a.75.75 0 0 0 .75-.75V2.784Z" clipRule="evenodd" />
+                    </svg>
+                    Repurpose
+                  </Button>
+
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
                     onClick={() => setExportOpen(true)}
                     aria-label="Export chapter"
                     className="gap-1.5 text-muted-foreground hover:text-foreground"
@@ -408,38 +435,78 @@ export function EditorClient({ project, initialChapters, showPrayerPrompt, initi
         </div>
       </div>
 
-      {/* ── Right Panel: AI Insights + Markers ── */}
-      <div className={`w-72 shrink-0 border-l border-border/30 overflow-y-auto hidden xl:block ${focusMode ? '!hidden' : ''}`}>
-        {/* Insight Markers — pattern detection pills */}
-        <InsightMarkers
-          editorContent={editorContent}
-          onAction={(action, text) => {
-            if (!baseContext || !text.trim()) return
-            fetch('/api/orchestrate', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                action,
-                userText: text,
-                context: baseContext,
-              }),
-            })
-              .then((res) => res.json())
-              .then((data) => {
-                if (data.result && typeof data.result === 'string') {
-                  handleApplyAiResult(data.result)
-                }
-              })
-              .catch(() => {})
-          }}
-        />
+      {/* ── Right Panel: Tabbed sidebar ── */}
+      <div className={`w-72 shrink-0 border-l border-border/30 hidden xl:flex xl:flex-col ${focusMode ? '!hidden' : ''}`}>
+        {/* Tab bar */}
+        <div className="flex border-b border-border/30 bg-muted/10 shrink-0">
+          <button
+            type="button"
+            onClick={() => setRightTab('insights')}
+            className={`flex-1 py-2 text-[11px] font-semibold tracking-wide transition-colors ${
+              rightTab === 'insights'
+                ? 'text-amber-700 border-b-2 border-amber-500 bg-background'
+                : 'text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            Insights
+          </button>
+          <button
+            type="button"
+            onClick={() => setRightTab('bible')}
+            className={`flex-1 py-2 text-[11px] font-semibold tracking-wide transition-colors ${
+              rightTab === 'bible'
+                ? 'text-amber-700 border-b-2 border-amber-500 bg-background'
+                : 'text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            Project Bible
+          </button>
+        </div>
 
-        {/* Insight Panel — Suggestions + Tools + Scripture */}
-        <InsightPanel
-          editorContent={editorContent}
-          projectContext={baseContext}
-          onApplyResult={handleApplyAiResult}
-        />
+        {/* Tab content */}
+        <div className="flex-1 overflow-y-auto">
+          {rightTab === 'insights' && (
+            <>
+              {/* Insight Markers — pattern detection pills */}
+              <InsightMarkers
+                editorContent={editorContent}
+                onAction={(action, text) => {
+                  if (!baseContext || !text.trim()) return
+                  fetch('/api/orchestrate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                      action,
+                      userText: text,
+                      context: baseContext,
+                    }),
+                  })
+                    .then((res) => res.json())
+                    .then((data) => {
+                      if (data.result && typeof data.result === 'string') {
+                        handleApplyAiResult(data.result)
+                      }
+                    })
+                    .catch(() => {})
+                }}
+              />
+
+              {/* Insight Panel — Suggestions + Tools + Scripture */}
+              <InsightPanel
+                editorContent={editorContent}
+                projectContext={baseContext}
+                onApplyResult={handleApplyAiResult}
+              />
+            </>
+          )}
+
+          {rightTab === 'bible' && (
+            <ProjectBiblePanel
+              projectId={project.id}
+              totalChapterWords={totalChapterWords}
+            />
+          )}
+        </div>
       </div>
 
       {/* Writing Team Drawer — overlay */}
@@ -468,6 +535,17 @@ export function EditorClient({ project, initialChapters, showPrayerPrompt, initi
         chapterId={activeChapter.id}
         chapterTitle={activeChapter.title}
         chapterContent={editorContent}
+      />
+
+      {/* Repurpose Modal */}
+      <RepurposeModal
+        isOpen={repurposeOpen}
+        onClose={() => setRepurposeOpen(false)}
+        sourceContent={editorContent}
+        sourceTitle={activeChapter.title}
+        projectContext={baseContext}
+        projectId={project.id}
+        projectTitle={project.title}
       />
     </div>
   )

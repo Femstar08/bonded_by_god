@@ -1,4 +1,4 @@
-import { Project, Chapter, StyleData } from '@/types/database'
+import { Project, Chapter, StyleData, ProjectBibleEntry, ProjectBibleCategory } from '@/types/database'
 
 /**
  * Format a StyleData object into a readable prompt block for AI injection.
@@ -43,6 +43,7 @@ export type ProjectContext = {
   projectWritingStyle?: string
   sectionMap?: string
   authorStyleProfile?: StyleData
+  projectBible?: ProjectBibleEntry[]
 }
 
 /**
@@ -69,6 +70,7 @@ export function buildProjectContext(
     projectWritingStyle?: string
     sectionMap?: string
     authorStyleProfile?: StyleData
+    projectBible?: ProjectBibleEntry[]
   }
 ): ProjectContext {
   const ctx: ProjectContext = {
@@ -106,8 +108,95 @@ export function buildProjectContext(
   if (options?.projectWritingStyle) ctx.projectWritingStyle = options.projectWritingStyle
   if (options?.sectionMap) ctx.sectionMap = options.sectionMap
   if (options?.authorStyleProfile) ctx.authorStyleProfile = options.authorStyleProfile
+  if (options?.projectBible?.length) ctx.projectBible = options.projectBible
 
   return ctx
+}
+
+/**
+ * Category display order for Project Bible prompt injection.
+ * Higher-priority categories are inserted first so they survive any
+ * downstream truncation that might cut the tail of the prompt.
+ */
+const BIBLE_CATEGORY_ORDER: ProjectBibleCategory[] = [
+  'theological_positions',
+  'core_scriptures',
+  'themes',
+  'audience_profile',
+  'tone_voice_notes',
+  'key_figures',
+  'custom_notes',
+]
+
+/** Human-readable labels for each Project Bible category. */
+const BIBLE_CATEGORY_LABELS: Record<ProjectBibleCategory, string> = {
+  theological_positions: 'Theological Positions',
+  core_scriptures: 'Core Scriptures',
+  themes: 'Themes',
+  audience_profile: 'Audience Profile',
+  tone_voice_notes: 'Tone & Voice Notes',
+  key_figures: 'Key Figures',
+  custom_notes: 'Custom Notes',
+}
+
+/**
+ * Format Project Bible entries into a compact, token-safe prompt block.
+ *
+ * Entries are grouped by category and emitted in priority order.
+ * The output is hard-capped at ~6 000 characters (≈ 1 500 tokens) so it
+ * cannot crowd out the author's actual writing context.
+ *
+ * @param entries - The full list of ProjectBibleEntry rows for the project
+ * @returns A formatted string block, or an empty string when there are no entries
+ */
+export function formatProjectBibleForPrompt(entries: ProjectBibleEntry[]): string {
+  if (!entries.length) return ''
+
+  const MAX_CHARS = 6000
+
+  // Group entries by category for ordered emission
+  const byCategory = new Map<ProjectBibleCategory, ProjectBibleEntry[]>()
+  for (const entry of entries) {
+    const bucket = byCategory.get(entry.category) ?? []
+    bucket.push(entry)
+    byCategory.set(entry.category, bucket)
+  }
+
+  const headerLine = 'PROJECT BIBLE'
+  const lines: string[] = [headerLine, '']
+  let charCount = headerLine.length + 1 // +1 for the blank line
+
+  for (const category of BIBLE_CATEGORY_ORDER) {
+    const bucket = byCategory.get(category)
+    if (!bucket?.length) continue
+
+    const categoryHeader = BIBLE_CATEGORY_LABELS[category]
+    // +2: the header line + blank separator below it
+    charCount += categoryHeader.length + 2
+
+    if (charCount >= MAX_CHARS) break
+
+    lines.push(categoryHeader)
+
+    for (const entry of bucket) {
+      // Format: "• Title: Content [Refs: …]"
+      const refs =
+        entry.scripture_refs.length > 0
+          ? ` [Refs: ${entry.scripture_refs.join(', ')}]`
+          : ''
+      const entryLine = `• ${entry.title}: ${entry.content}${refs}`
+
+      if (charCount + entryLine.length > MAX_CHARS) break
+
+      lines.push(entryLine)
+      charCount += entryLine.length + 1 // +1 for newline
+    }
+
+    lines.push('')
+    charCount += 1 // blank separator line
+  }
+
+  return lines.join('\n').trimEnd()
 }
 
 /**
@@ -141,6 +230,15 @@ export function formatContextForPrompt(ctx: ProjectContext): string {
 
   if (ctx.audience) lines.push(`Target Audience: ${ctx.audience}`)
   if (ctx.scriptureFocus) lines.push(`Scripture Focus: ${ctx.scriptureFocus}`)
+
+  // ── PROJECT BIBLE ──
+  // Structured knowledge extracted from the author's own writing.
+  // Inserted between book context and style so agents understand the project's
+  // theology, themes, and audience before deciding how to write.
+  if (ctx.projectBible?.length) {
+    lines.push('')
+    lines.push(formatProjectBibleForPrompt(ctx.projectBible))
+  }
 
   // ── AUTHOR STYLE ──
   // Structured style profile takes priority over plain-text style fields

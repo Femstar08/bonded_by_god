@@ -1,12 +1,14 @@
+import { createClient } from '@/lib/supabase/server'
 import { getChapterMemories, getProjectMemory } from './store'
 import { getStyleProfile } from './style-store'
-import type { ChapterMemory, StyleData } from '@/types/database'
+import type { ChapterMemory, StyleData, ProjectBibleEntry } from '@/types/database'
 
 export interface MemoryContext {
   chapterSummaries: string
   usedScriptures: string
   projectWritingStyle: string
   authorStyleProfile?: StyleData
+  projectBible?: ProjectBibleEntry[]
 }
 
 /**
@@ -20,10 +22,19 @@ export async function buildMemoryContext(
   activeChapterId: string,
   userId?: string
 ): Promise<MemoryContext> {
-  const [chapterMemories, projectMemory, styleProfile] = await Promise.all([
+  const [chapterMemories, projectMemory, styleProfile, bibleEntries] = await Promise.all([
     getChapterMemories(projectId),
     getProjectMemory(projectId),
     userId ? getStyleProfile(userId, projectId) : Promise.resolve(null),
+    (async () => {
+      const supabase = await createClient()
+      const { data } = await supabase
+        .from('ltu_project_bible_entries')
+        .select('*')
+        .eq('project_id', projectId)
+        .order('sort_order', { ascending: true })
+      return (data ?? []) as ProjectBibleEntry[]
+    })(),
   ])
 
   // Build chapter summaries — exclude the active chapter, limit to 10
@@ -65,6 +76,10 @@ export async function buildMemoryContext(
 
   if (styleProfile?.style_data) {
     result.authorStyleProfile = styleProfile.style_data
+  }
+
+  if (bibleEntries.length > 0) {
+    result.projectBible = bibleEntries
   }
 
   return result
