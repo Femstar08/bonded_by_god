@@ -1,9 +1,22 @@
+export type BibleTranslation = 'NIV' | 'ESV' | 'KJV' | 'NKJV' | 'NASB' | 'NLT' | 'MSG'
+
+export type BibleComparisonLayout = 'side_by_side' | 'stacked'
+
+export type TranslationVerse = {
+  translation: BibleTranslation
+  text: string
+  available: boolean
+}
+
 export type Profile = {
   id: string
   email: string
   display_name: string | null
   show_prayer_prompt: boolean
   show_daily_scripture: boolean
+  preferred_translation: BibleTranslation
+  bible_comparison_layout: BibleComparisonLayout
+  bible_translations_count: number
   created_at: string
 }
 
@@ -46,6 +59,9 @@ export type WritingSession = {
   updated_at: string
 }
 
+export type ChapterStatus = 'not_started' | 'in_progress' | 'draft' | 'revision' | 'complete'
+export type ColorLabel = 'red' | 'orange' | 'yellow' | 'green' | 'teal' | 'blue' | 'purple' | null
+
 export type Chapter = {
   id: string
   project_id: string
@@ -53,6 +69,9 @@ export type Chapter = {
   content: string
   position: number
   word_goal: number
+  status: ChapterStatus
+  synopsis: string
+  color_label: ColorLabel
   created_at: string
   updated_at: string
 }
@@ -88,6 +107,7 @@ export type Section = {
   title: string
   status: SectionStatus
   summary: string
+  synopsis: string
   notes: string
   position: number
   created_at: string

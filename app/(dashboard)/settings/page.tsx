@@ -1,7 +1,9 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { SpiritualToolsSettings } from '@/components/settings/SpiritualToolsSettings'
+import { BibleTranslationSettings } from '@/components/settings/BibleTranslationSettings'
 import { StyleTraining } from '@/components/settings/StyleTraining'
+import type { BibleTranslation, BibleComparisonLayout } from '@/types/database'
 
 export default async function SettingsPage() {
   const supabase = await createClient()
@@ -16,7 +18,7 @@ export default async function SettingsPage() {
   const [{ data: profile }, { data: projects }] = await Promise.all([
     supabase
       .from('ltu_profiles')
-      .select('show_prayer_prompt, show_daily_scripture')
+      .select('show_prayer_prompt, show_daily_scripture, preferred_translation, bible_comparison_layout, bible_translations_count')
       .eq('id', user.id)
       .single(),
     supabase
@@ -69,6 +71,21 @@ export default async function SettingsPage() {
             userId={user.id}
             initialShowPrayerPrompt={profile?.show_prayer_prompt ?? true}
             initialShowDailyScripture={profile?.show_daily_scripture ?? true}
+          />
+        </div>
+      </div>
+
+      {/* Scripture & Bible section */}
+      <div>
+        <p className="text-[11px] uppercase tracking-[0.2em] font-semibold text-muted-foreground/50 mb-6">
+          Scripture & Bible
+        </p>
+        <div className="bg-white rounded-2xl border border-border/50 p-8">
+          <BibleTranslationSettings
+            userId={user.id}
+            initialPreferredTranslation={(profile?.preferred_translation as BibleTranslation) ?? 'NIV'}
+            initialLayout={(profile?.bible_comparison_layout as BibleComparisonLayout) ?? 'side_by_side'}
+            initialTranslationsCount={profile?.bible_translations_count ?? 3}
           />
         </div>
       </div>

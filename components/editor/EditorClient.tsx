@@ -10,13 +10,22 @@ import { WritingEditor } from './WritingEditor'
 import { InsightPanel } from './InsightPanel'
 import { InsightMarkers } from './InsightMarkers'
 import { ProjectBiblePanel } from './ProjectBiblePanel'
+import { TranslationComparisonPanel } from './TranslationComparisonPanel'
 import { ExportModal } from './ExportModal'
 import { RepurposeModal } from './RepurposeModal'
 import { PrayerPromptModal } from './PrayerPromptModal'
 import { WritingJourney } from './WritingJourney'
 import { WritingTeamDrawer } from './WritingTeamDrawer'
 import type { WritingTeamAction } from './WritingTeamDrawer'
+import { VisualPlanner } from '@/components/planner/VisualPlanner'
 import { Button } from '@/components/ui/button'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import { cleanExpiredCache } from '@/lib/hooks/useVerseCache'
 
 interface EditorClientProps {
   project: Project
@@ -44,6 +53,13 @@ export function EditorClient({ project, initialChapters, showPrayerPrompt, initi
   const [activeSectionTitle, setActiveSectionTitle] = useState<string | null>(null)
   const [focusMode, setFocusMode] = useState(false)
   const [rightTab, setRightTab] = useState<'insights' | 'bible'>('insights')
+  const [lookupVerseRef, setLookupVerseRef] = useState<string | null>(null)
+  const [plannerOpen, setPlannerOpen] = useState(false)
+
+  // Clean expired verse cache on mount
+  useEffect(() => {
+    cleanExpiredCache()
+  }, [])
 
   const activeChapter = chapters.find((c) => c.id === activeChapterId)
 
@@ -310,6 +326,16 @@ export function EditorClient({ project, initialChapters, showPrayerPrompt, initi
                   <path fillRule="evenodd" d="M2 4.75A.75.75 0 0 1 2.75 4h14.5a.75.75 0 0 1 0 1.5H2.75A.75.75 0 0 1 2 4.75Zm0 10.5a.75.75 0 0 1 .75-.75h7.5a.75.75 0 0 1 0 1.5h-7.5a.75.75 0 0 1-.75-.75ZM2 10a.75.75 0 0 1 .75-.75h14.5a.75.75 0 0 1 0 1.5H2.75A.75.75 0 0 1 2 10Z" clipRule="evenodd" />
                 </svg>
               </button>
+              <button
+                onClick={() => setPlannerOpen(true)}
+                className="p-1 rounded hover:bg-white/10 transition-colors"
+                aria-label="Visual Planner"
+                title="Visual Planner"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="size-4">
+                  <path fillRule="evenodd" d="M4.25 2A2.25 2.25 0 0 0 2 4.25v2.5A2.25 2.25 0 0 0 4.25 9h2.5A2.25 2.25 0 0 0 9 6.75v-2.5A2.25 2.25 0 0 0 6.75 2h-2.5Zm0 9A2.25 2.25 0 0 0 2 13.25v2.5A2.25 2.25 0 0 0 4.25 18h2.5A2.25 2.25 0 0 0 9 15.75v-2.5A2.25 2.25 0 0 0 6.75 11h-2.5Zm9-9A2.25 2.25 0 0 0 11 4.25v2.5A2.25 2.25 0 0 0 13.25 9h2.5A2.25 2.25 0 0 0 18 6.75v-2.5A2.25 2.25 0 0 0 15.75 2h-2.5Zm0 9A2.25 2.25 0 0 0 11 13.25v2.5A2.25 2.25 0 0 0 13.25 18h2.5A2.25 2.25 0 0 0 18 15.75v-2.5A2.25 2.25 0 0 0 15.75 11h-2.5Z" clipRule="evenodd" />
+                </svg>
+              </button>
               <span className="text-amber-300 font-medium">{activeChapter.title}</span>
             </div>
             <div className="flex items-center gap-3">
@@ -427,6 +453,7 @@ export function EditorClient({ project, initialChapters, showPrayerPrompt, initi
           lastMemoryWordCount={lastMemoryWordCount}
           onMemoryTrigger={handleMemoryTrigger}
           onAiAction={handleAiAction}
+          onLookupVerse={(ref) => setLookupVerseRef(ref)}
           paragraphFocus={focusMode}
         />
 
@@ -547,6 +574,45 @@ export function EditorClient({ project, initialChapters, showPrayerPrompt, initi
         projectId={project.id}
         projectTitle={project.title}
       />
+
+      {/* Translation Comparison Dialog */}
+      <Dialog open={!!lookupVerseRef} onOpenChange={(open) => !open && setLookupVerseRef(null)}>
+        <DialogContent className="sm:max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="font-serif text-amber-900">
+              Compare Translations
+            </DialogTitle>
+          </DialogHeader>
+          {lookupVerseRef && (
+            <TranslationComparisonPanel
+              reference={lookupVerseRef}
+              onInsert={(text, translation) => {
+                const block = `<blockquote data-type="scripture" data-reference="${lookupVerseRef}" data-translation="${translation}" class="scripture-block"><p>${text}</p><p class="scripture-ref">— ${lookupVerseRef} (${translation})</p></blockquote>`
+                handleApplyAiResult(editorContent + block)
+                setLookupVerseRef(null)
+              }}
+              onClose={() => setLookupVerseRef(null)}
+              layout="stacked"
+            />
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Visual Planner Overlay */}
+      {plannerOpen && (
+        <div className="fixed inset-0 z-50 bg-background/95 backdrop-blur-sm">
+          <VisualPlanner
+            projectId={project.id}
+            projectTitle={project.title}
+            projectType={project.type}
+            onNavigateToChapter={(chapterId) => {
+              setPlannerOpen(false)
+              handleChapterSelect(chapterId)
+            }}
+            onClose={() => setPlannerOpen(false)}
+          />
+        </div>
+      )}
     </div>
   )
 }

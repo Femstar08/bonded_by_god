@@ -14,6 +14,7 @@ interface WritingEditorProps {
   lastMemoryWordCount?: number
   onMemoryTrigger?: (chapterId: string, projectId: string) => void
   onAiAction?: (action: string, selectedText: string) => void
+  onLookupVerse?: (reference: string) => void
   paragraphFocus?: boolean
 }
 
@@ -25,6 +26,7 @@ export function WritingEditor({
   lastMemoryWordCount = 0,
   onMemoryTrigger,
   onAiAction,
+  onLookupVerse,
   paragraphFocus,
 }: WritingEditorProps) {
   const [status, setStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
@@ -86,6 +88,7 @@ export function WritingEditor({
         onUpdate={handleUpdate}
         placeholder="Start writing... Type / to insert scripture, reflection, or story."
         onAiAction={onAiAction}
+        onLookupVerse={onLookupVerse}
         paragraphFocus={paragraphFocus}
       />
       {/* Auto-save status — subtle indicator below editor */}

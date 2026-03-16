@@ -7,7 +7,8 @@ interface Verse {
   reason?: string
 }
 
-const SUGGEST_SYSTEM_PROMPT = `You are a Bible scholar assisting a Christian writer on a platform called Scriptloom.
+function buildSuggestPrompt(translation: string) {
+  return `You are a Bible scholar assisting a Christian writer on a platform called Scriptloom.
 
 Given the paragraph below, suggest 3 Bible verses that strongly support the theme or idea.
 
@@ -28,11 +29,13 @@ Guidelines:
 • prioritize clarity and relevance
 • avoid obscure references
 • balance Old Testament and New Testament where appropriate
-• use the NIV translation
+• use the ${translation} translation
 
 Do not include any text outside the JSON.`
+}
 
-const SEARCH_SYSTEM_PROMPT = `You are a Bible scholar assisting a Christian writer on a platform called Scriptloom.
+function buildSearchPrompt(translation: string) {
+  return `You are a Bible scholar assisting a Christian writer on a platform called Scriptloom.
 
 Given a keyword, theme, or verse reference, return 3–5 relevant Bible verses.
 
@@ -54,8 +57,9 @@ Return ONLY JSON:
 }
 
 Rules:
-- Use the NIV translation.
+- Use the ${translation} translation.
 - Do not include any text outside the JSON.`
+}
 
 const INSERT_SYSTEM_PROMPT = `You are assisting a Christian author writing a book on a platform called Scriptloom.
 
@@ -72,7 +76,8 @@ Book Chapter:Verse
 
 Do not include any other text.`
 
-export async function runInterpreter(input: AgentInput & { mode: 'suggest' | 'search' | 'insert'; query?: string }): Promise<AgentResult> {
+export async function runInterpreter(input: AgentInput & { mode: 'suggest' | 'search' | 'insert'; query?: string; preferredTranslation?: string }): Promise<AgentResult> {
+  const translation = input.preferredTranslation || 'NIV'
   if (input.mode === 'insert') {
     const contextBlock = formatContextForPrompt(input.context)
     const userMessage = `${contextBlock}\n\nParagraph:\n${input.userText?.substring(0, 2000) || ''}`
@@ -84,7 +89,7 @@ export async function runInterpreter(input: AgentInput & { mode: 'suggest' | 'se
     return { agent: 'interpreter', content }
   }
 
-  const systemPrompt = input.mode === 'search' ? SEARCH_SYSTEM_PROMPT : SUGGEST_SYSTEM_PROMPT
+  const systemPrompt = input.mode === 'search' ? buildSearchPrompt(translation) : buildSuggestPrompt(translation)
 
   let userMessage: string
   if (input.mode === 'search') {

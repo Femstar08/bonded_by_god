@@ -13,6 +13,13 @@ import {
   getLastParagraph,
 } from '@/lib/ai/analysis/writingSignals'
 import { isWorthAnalyzing, hasNewContent } from '@/lib/ai/analysis/insightClassifier'
+import { TranslationComparisonPanel } from './TranslationComparisonPanel'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -724,6 +731,7 @@ function ScriptureTab({ editorContent, projectContext }: ScriptureTabProps) {
   const [error, setError] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null)
+  const [comparingRef, setComparingRef] = useState<string | null>(null)
 
   const fetchVerses = async (mode: 'suggest' | 'search') => {
     setLoading(true)
@@ -812,27 +820,53 @@ function ScriptureTab({ editorContent, projectContext }: ScriptureTabProps) {
       {!loading && verses.length > 0 && (
         <ul className="space-y-2">
           {verses.map((verse, i) => (
-            <li
-              key={i}
-              className="flex items-start justify-between gap-2 rounded-md bg-amber-50/50 border border-amber-100 px-3 py-2"
-            >
-              <div className="flex-1 min-w-0">
-                <span className="font-semibold text-amber-700 text-sm">{verse.reference}</span>
-                <p className="text-sm text-muted-foreground mt-0.5 leading-relaxed">
-                  &quot;{verse.text}&quot;
-                </p>
+            <li key={i}>
+              <div className="flex items-start justify-between gap-2 rounded-md bg-amber-50/50 border border-amber-100 px-3 py-2">
+                <div className="flex-1 min-w-0">
+                  <span className="font-semibold text-amber-700 text-sm">{verse.reference}</span>
+                  <p className="text-sm text-muted-foreground mt-0.5 leading-relaxed">
+                    &quot;{verse.text}&quot;
+                  </p>
+                </div>
+                <div className="flex flex-col gap-1 shrink-0">
+                  <button
+                    onClick={() => handleCopy(verse, i)}
+                    className="shrink-0 rounded px-2 py-1 text-xs text-muted-foreground hover:bg-amber-100 transition-colors"
+                    title="Copy to clipboard"
+                  >
+                    {copiedIndex === i ? 'Copied' : 'Copy'}
+                  </button>
+                  <button
+                    onClick={() => setComparingRef(verse.reference)}
+                    className="shrink-0 rounded px-2 py-1 text-xs text-amber-600 hover:bg-amber-100 transition-colors"
+                    title="Compare translations"
+                  >
+                    Compare
+                  </button>
+                </div>
               </div>
-              <button
-                onClick={() => handleCopy(verse, i)}
-                className="shrink-0 rounded px-2 py-1 text-xs text-muted-foreground hover:bg-amber-100 transition-colors"
-                title="Copy to clipboard"
-              >
-                {copiedIndex === i ? 'Copied' : 'Copy'}
-              </button>
             </li>
           ))}
         </ul>
       )}
+
+      {/* Translation Comparison Dialog */}
+      <Dialog open={!!comparingRef} onOpenChange={(open) => !open && setComparingRef(null)}>
+        <DialogContent className="sm:max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="font-serif text-amber-900">
+              Compare Translations
+            </DialogTitle>
+          </DialogHeader>
+          {comparingRef && (
+            <TranslationComparisonPanel
+              reference={comparingRef}
+              onClose={() => setComparingRef(null)}
+              layout="stacked"
+            />
+          )}
+        </DialogContent>
+      </Dialog>
 
       {/* Empty state */}
       {!loading && !error && verses.length === 0 && (
