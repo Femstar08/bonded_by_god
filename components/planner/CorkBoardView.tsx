@@ -20,6 +20,7 @@ interface CorkBoardViewProps {
   onSynopsisChange: (chapterId: string, synopsis: string) => void
   onTitleChange: (chapterId: string, title: string) => void
   onMoveToPart: (chapterId: string, partId: string | null) => void
+  onDeleteChapter?: (chapterId: string) => void
 }
 
 // ─── Color label constants ─────────────────────────────────
@@ -66,6 +67,7 @@ interface ChapterCardProps {
   onSynopsisChange: (chapterId: string, synopsis: string) => void
   onTitleChange: (chapterId: string, title: string) => void
   onMoveToPart: (chapterId: string, partId: string | null) => void
+  onDeleteChapter?: (chapterId: string) => void
 }
 
 function ChapterCard({
@@ -84,6 +86,7 @@ function ChapterCard({
   onSynopsisChange,
   onTitleChange,
   onMoveToPart,
+  onDeleteChapter,
 }: ChapterCardProps) {
   const [isEditingTitle, setIsEditingTitle] = useState(false)
   const [editTitle, setEditTitle] = useState(chapter.title)
@@ -129,7 +132,7 @@ function ChapterCard({
       onDragOver={(e) => onDragOver(e, index)}
       onDrop={(e) => onDrop(e, index)}
       onDragEnd={onDragEnd}
-      className={`relative flex flex-col rounded-xl bg-white shadow-sm border transition-all duration-150 ${
+      className={`group/card relative flex flex-col rounded-xl bg-white shadow-sm border transition-all duration-150 ${
         isDragOver
           ? 'ring-2 ring-amber-400 border-amber-300 shadow-md scale-[1.01]'
           : 'border-slate-200 hover:border-slate-300 hover:shadow-md'
@@ -167,23 +170,54 @@ function ChapterCard({
             </h3>
           )}
 
-          {/* Expand / detail button */}
-          <button
-            type="button"
-            onClick={() => onChapterClick(chapter.id)}
-            className="shrink-0 p-0.5 rounded text-slate-400 hover:text-amber-600 hover:bg-amber-50 transition-colors"
-            aria-label={`Open chapter details for ${chapter.title}`}
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 20 20"
-              fill="currentColor"
-              className="size-4"
-              aria-hidden="true"
+          {/* Action buttons */}
+          <div className="flex items-center gap-0.5 shrink-0">
+            {onDeleteChapter && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  if (window.confirm(`Delete "${chapter.title}"? This cannot be undone.`)) {
+                    onDeleteChapter(chapter.id)
+                  }
+                }}
+                className="p-0.5 rounded text-slate-300 hover:text-red-500 hover:bg-red-50 transition-colors opacity-0 group-hover/card:opacity-100"
+                aria-label={`Delete chapter ${chapter.title}`}
+                title="Delete chapter"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                  className="size-3.5"
+                  aria-hidden="true"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M8.75 1A2.75 2.75 0 0 0 6 3.75v.443c-.795.077-1.584.176-2.365.298a.75.75 0 1 0 .23 1.482l.149-.022.841 10.518A2.75 2.75 0 0 0 7.596 19h4.807a2.75 2.75 0 0 0 2.742-2.53l.841-10.52.149.023a.75.75 0 0 0 .23-1.482A41.03 41.03 0 0 0 14 4.193V3.75A2.75 2.75 0 0 0 11.25 1h-2.5ZM10 4c.84 0 1.673.025 2.5.075V3.75c0-.69-.56-1.25-1.25-1.25h-2.5c-.69 0-1.25.56-1.25 1.25v.325C8.327 4.025 9.16 4 10 4ZM8.58 7.72a.75.75 0 0 0-1.5.06l.3 7.5a.75.75 0 1 0 1.5-.06l-.3-7.5Zm4.34.06a.75.75 0 1 0-1.5-.06l-.3 7.5a.75.75 0 1 0 1.5.06l.3-7.5Z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+              </button>
+            )}
+            {/* Expand / detail button */}
+            <button
+              type="button"
+              onClick={() => onChapterClick(chapter.id)}
+              className="p-0.5 rounded text-slate-400 hover:text-amber-600 hover:bg-amber-50 transition-colors"
+              aria-label={`Open chapter details for ${chapter.title}`}
             >
-              <path d="M13.586 3.586a2 2 0 1 1 2.828 2.828l-.793.793-2.828-2.828.793-.793ZM11.379 5.793 3 14.172V17h2.828l8.38-8.379-2.83-2.828Z" />
-            </svg>
-          </button>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+                className="size-4"
+                aria-hidden="true"
+              >
+                <path d="M13.586 3.586a2 2 0 1 1 2.828 2.828l-.793.793-2.828-2.828.793-.793ZM11.379 5.793 3 14.172V17h2.828l8.38-8.379-2.83-2.828Z" />
+              </svg>
+            </button>
+          </div>
         </div>
 
         {/* Status select */}
@@ -353,6 +387,7 @@ export function CorkBoardView({
   onSynopsisChange,
   onTitleChange,
   onMoveToPart,
+  onDeleteChapter,
 }: CorkBoardViewProps) {
   const labels = hierarchyLabels
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null)
@@ -405,14 +440,14 @@ export function CorkBoardView({
                   dragOverIndex === index ? 'ring-2 ring-amber-400' : ''
                 }`}
               >
-                <button
-                  type="button"
-                  onClick={() => onChapterClick(chapter.id)}
-                  className="w-full text-left"
-                >
-                  <div className="bg-[#0f1a2e] rounded-lg px-4 py-3 flex items-center gap-3 group hover:bg-[#142035] transition-colors">
-                    <p className="text-[10px] text-amber-400/60 uppercase tracking-widest shrink-0">{labels.part}</p>
-                    <h3 className="font-serif text-sm font-semibold text-amber-100 group-hover:text-amber-50 transition-colors">
+                <div className="group/part bg-[#0f1a2e] rounded-lg px-4 py-3 flex items-center gap-3 hover:bg-[#142035] transition-colors">
+                  <p className="text-[10px] text-amber-400/60 uppercase tracking-widest shrink-0">{labels.part}</p>
+                  <button
+                    type="button"
+                    onClick={() => onChapterClick(chapter.id)}
+                    className="flex-1 min-w-0 text-left flex items-center gap-3"
+                  >
+                    <h3 className="font-serif text-sm font-semibold text-amber-100 hover:text-amber-50 transition-colors">
                       {chapter.title}
                     </h3>
                     {chapter.synopsis && (
@@ -420,8 +455,36 @@ export function CorkBoardView({
                         {chapter.synopsis}
                       </p>
                     )}
-                  </div>
-                </button>
+                  </button>
+                  {onDeleteChapter && (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        if (window.confirm(`Delete "${chapter.title}"? This cannot be undone.`)) {
+                          onDeleteChapter(chapter.id)
+                        }
+                      }}
+                      className="shrink-0 p-0.5 rounded text-white/20 hover:text-red-400 hover:bg-white/10 transition-colors opacity-0 group-hover/part:opacity-100"
+                      aria-label={`Delete part ${chapter.title}`}
+                      title="Delete part"
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 20 20"
+                        fill="currentColor"
+                        className="size-3.5"
+                        aria-hidden="true"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M8.75 1A2.75 2.75 0 0 0 6 3.75v.443c-.795.077-1.584.176-2.365.298a.75.75 0 1 0 .23 1.482l.149-.022.841 10.518A2.75 2.75 0 0 0 7.596 19h4.807a2.75 2.75 0 0 0 2.742-2.53l.841-10.52.149.023a.75.75 0 0 0 .23-1.482A41.03 41.03 0 0 0 14 4.193V3.75A2.75 2.75 0 0 0 11.25 1h-2.5ZM10 4c.84 0 1.673.025 2.5.075V3.75c0-.69-.56-1.25-1.25-1.25h-2.5c-.69 0-1.25.56-1.25 1.25v.325C8.327 4.025 9.16 4 10 4ZM8.58 7.72a.75.75 0 0 0-1.5.06l.3 7.5a.75.75 0 1 0 1.5-.06l-.3-7.5Zm4.34.06a.75.75 0 1 0-1.5-.06l-.3 7.5a.75.75 0 1 0 1.5.06l.3-7.5Z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                    </button>
+                  )}
+                </div>
               </div>
             )
           }
@@ -445,6 +508,7 @@ export function CorkBoardView({
               onSynopsisChange={onSynopsisChange}
               onTitleChange={onTitleChange}
               onMoveToPart={onMoveToPart}
+              onDeleteChapter={onDeleteChapter}
             />
           )
         })}

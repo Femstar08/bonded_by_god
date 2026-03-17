@@ -378,6 +378,72 @@ export function VisualPlanner({
     []
   )
 
+  // ── Delete chapter (non-part) ─────────────────────────
+  const handleDeleteChapter = useCallback(
+    async (chapterId: string) => {
+      try {
+        const res = await fetch(`/api/chapters/${chapterId}`, { method: 'DELETE' })
+        if (res.ok) {
+          setChapters((prev) => prev.filter((c) => c.id !== chapterId))
+          if (selectedChapterId === chapterId) setSelectedChapterId(null)
+        }
+      } catch {
+        // Non-critical
+      }
+    },
+    [selectedChapterId]
+  )
+
+  // ── Update a section ───────────────────────────────────
+  const handleSectionUpdate = useCallback(
+    async (sectionId: string, updates: { title?: string; status?: string }) => {
+      // Optimistic local update
+      setChapters((prev) =>
+        prev.map((c) => ({
+          ...c,
+          sections: c.sections.map((s) =>
+            s.id === sectionId ? ({ ...s, ...updates } as PlannerSection) : s
+          ),
+        }))
+      )
+      try {
+        await fetch('/api/writing-map/sections', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sectionId, ...updates }),
+        })
+      } catch {
+        // Non-critical — optimistic update already applied
+      }
+    },
+    []
+  )
+
+  // ── Delete a section ───────────────────────────────────
+  const handleSectionDelete = useCallback(
+    async (sectionId: string) => {
+      // Optimistic local removal
+      setChapters((prev) =>
+        prev.map((c) => ({
+          ...c,
+          sections: c.sections
+            .filter((s) => s.id !== sectionId)
+            .map((s, i) => ({ ...s, position: i + 1 })),
+        }))
+      )
+      try {
+        await fetch('/api/writing-map/sections', {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sectionId }),
+        })
+      } catch {
+        // Non-critical — optimistic update already applied
+      }
+    },
+    []
+  )
+
   // ── Delete part ──────────────────────────────────────
   const handleDeletePart = useCallback(
     async (partId: string, mode: 'merge_previous' | 'ungrouped' | 'delete_all') => {
@@ -556,6 +622,7 @@ export function VisualPlanner({
                 onStatusChange={handleStatusChange}
                 onSectionMove={handleSectionMove}
                 onMoveToPart={handleMoveToPart}
+                onDeleteChapter={handleDeleteChapter}
               />
             ) : (
               <CorkBoardView
@@ -572,6 +639,7 @@ export function VisualPlanner({
                 onSynopsisChange={handleSynopsisChange}
                 onTitleChange={handleTitleChange}
                 onMoveToPart={handleMoveToPart}
+                onDeleteChapter={handleDeleteChapter}
               />
             )}
           </>
@@ -590,6 +658,10 @@ export function VisualPlanner({
         onNavigateToEditor={handleNavigateToEditor}
         onMoveToPart={handleMoveToPart}
         onDeletePart={handleDeletePart}
+        onDeleteChapter={handleDeleteChapter}
+        onSectionUpdate={handleSectionUpdate}
+        onSectionDelete={handleSectionDelete}
+        onAddSection={handleAddSection}
         chapters={chapters}
       />
     </div>

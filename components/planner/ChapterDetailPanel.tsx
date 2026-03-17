@@ -29,6 +29,10 @@ interface ChapterDetailPanelProps {
   onNavigateToEditor: (chapterId: string) => void
   onMoveToPart?: (chapterId: string, partId: string | null) => void
   onDeletePart?: (partId: string, mode: 'merge_previous' | 'ungrouped' | 'delete_all') => void
+  onDeleteChapter?: (chapterId: string) => void
+  onSectionUpdate?: (sectionId: string, updates: { title?: string; status?: string }) => void
+  onSectionDelete?: (sectionId: string) => void
+  onAddSection?: (chapterId: string) => void
   chapters?: PlannerChapter[]
 }
 
@@ -66,6 +70,14 @@ function getProjectLabels(projectType: string): HierarchyLabels {
   return { part: 'Part', chapter: 'Chapter', section: 'Section' }
 }
 
+// ─── Section status cycle ──────────────────────────────────
+const SECTION_STATUS_CYCLE: SectionStatus[] = ['empty', 'draft', 'review', 'complete']
+
+function nextSectionStatus(current: SectionStatus): SectionStatus {
+  const idx = SECTION_STATUS_CYCLE.indexOf(current)
+  return SECTION_STATUS_CYCLE[(idx + 1) % SECTION_STATUS_CYCLE.length]
+}
+
 export function ChapterDetailPanel({
   chapter,
   projectType,
@@ -77,10 +89,44 @@ export function ChapterDetailPanel({
   onNavigateToEditor,
   onMoveToPart,
   onDeletePart,
+  onDeleteChapter,
+  onSectionUpdate,
+  onSectionDelete,
+  onAddSection,
   chapters = [],
 }: ChapterDetailPanelProps) {
   const labels = hierarchyLabels ?? getProjectLabels(projectType)
   const [deleteModalOpen, setDeleteModalOpen] = useState(false)
+
+  // ─── Section inline-edit state ────────────────────────────
+  const [editingSectionId, setEditingSectionId] = useState<string | null>(null)
+  const [editingSectionTitle, setEditingSectionTitle] = useState('')
+  const sectionInputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    if (editingSectionId && sectionInputRef.current) {
+      sectionInputRef.current.focus()
+      sectionInputRef.current.select()
+    }
+  }, [editingSectionId])
+
+  const startSectionEdit = (section: PlannerSection) => {
+    setEditingSectionId(section.id)
+    setEditingSectionTitle(section.title)
+  }
+
+  const commitSectionEdit = (section: PlannerSection) => {
+    const trimmed = editingSectionTitle.trim()
+    if (trimmed && trimmed !== section.title && onSectionUpdate) {
+      onSectionUpdate(section.id, { title: trimmed })
+    }
+    setEditingSectionId(null)
+  }
+
+  const cancelSectionEdit = (section: PlannerSection) => {
+    setEditingSectionTitle(section.title)
+    setEditingSectionId(null)
+  }
 
   const [synopsis, setSynopsis] = useState(chapter?.synopsis ?? '')
   const [wordGoal, setWordGoal] = useState(String(chapter?.word_goal ?? 0))
@@ -355,6 +401,30 @@ export function ChapterDetailPanel({
                 </div>
               )}
 
+              {/* Delete Chapter — regular chapters only */}
+              {chapter.type !== 'part' && onDeleteChapter && (
+                <div className="space-y-1.5">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      if (
+                        window.confirm(
+                          `Are you sure you want to delete "${chapter.title}"? This action cannot be undone.`
+                        )
+                      ) {
+                        onDeleteChapter(chapter.id)
+                        onClose()
+                      }
+                    }}
+                    className="w-full h-8 text-xs text-red-600 hover:text-red-700 hover:bg-red-50 border border-red-200"
+                  >
+                    Delete {labels.chapter}
+                  </Button>
+                </div>
+              )}
+
               {/* Delete Part — parts only */}
               {chapter.type === 'part' && onDeletePart && (
                 <div className="space-y-1.5">
@@ -442,31 +512,107 @@ export function ChapterDetailPanel({
               </div>
 
               {/* Sections list — chapters only */}
-              {chapter.type !== 'part' && chapter.sections.length > 0 && (
+              {chapter.type !== 'part' && (
                 <div className="space-y-2">
-                  <Label className="text-xs text-slate-500">
-                    {labels.section}s ({chapter.sections.length})
-                  </Label>
-                  <div className="space-y-1.5">
-                    {chapter.sections.map((section: PlannerSection) => (
-                      <div
-                        key={section.id}
-                        className="flex items-start gap-2 rounded-lg bg-slate-50 px-3 py-2 border border-slate-100"
-                      >
-                        <div className="flex-1 min-w-0">
-                          <p className="text-xs font-medium text-slate-700 truncate">
-                            {section.position}. {section.title}
-                          </p>
-                          {section.synopsis && (
-                            <p className="text-[10px] text-slate-400 mt-0.5 line-clamp-2 leading-relaxed">
-                              {section.synopsis}
-                            </p>
-                          )}
-                        </div>
-                        <StatusBadge status={section.status as SectionStatus} size="sm" />
+                  {chapter.sections.length > 0 && (
+                    <>
+                      <Label className="text-xs text-slate-500">
+                        {labels.section}s ({chapter.sections.length})
+                      </Label>
+                      <div className="space-y-1.5">
+                        {chapter.sections.map((section: PlannerSection) => (
+                          <div
+                            key={section.id}
+                            className="group flex items-start gap-2 rounded-lg bg-slate-50 px-3 py-2 border border-slate-100 hover:border-slate-200 transition-colors"
+                          >
+                            <div className="flex-1 min-w-0">
+                              {editingSectionId === section.id ? (
+                                <input
+                                  ref={sectionInputRef}
+                                  type="text"
+                                  value={editingSectionTitle}
+                                  onChange={(e) => setEditingSectionTitle(e.target.value)}
+                                  onBlur={() => commitSectionEdit(section)}
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Enter') commitSectionEdit(section)
+                                    if (e.key === 'Escape') cancelSectionEdit(section)
+                                  }}
+                                  className="w-full text-xs font-medium bg-amber-50 border border-amber-300 rounded px-1.5 py-0.5 focus:outline-none focus:ring-1 focus:ring-amber-400"
+                                  maxLength={120}
+                                  aria-label="Edit section title"
+                                />
+                              ) : (
+                                <p
+                                  className="text-xs font-medium text-slate-700 truncate cursor-text hover:text-amber-700 transition-colors"
+                                  onDoubleClick={() => startSectionEdit(section)}
+                                  title="Double-click to rename"
+                                >
+                                  {section.position}. {section.title}
+                                </p>
+                              )}
+                              {section.synopsis && editingSectionId !== section.id && (
+                                <p className="text-[10px] text-slate-400 mt-0.5 line-clamp-2 leading-relaxed">
+                                  {section.synopsis}
+                                </p>
+                              )}
+                            </div>
+
+                            {/* Status badge — click to cycle */}
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (!onSectionUpdate) return
+                                const current = section.status as SectionStatus
+                                onSectionUpdate(section.id, { status: nextSectionStatus(current) })
+                              }}
+                              className="shrink-0 transition-opacity hover:opacity-80"
+                              aria-label={`Cycle status for ${section.title}`}
+                              title="Click to change status"
+                            >
+                              <StatusBadge status={section.status as SectionStatus} size="sm" />
+                            </button>
+
+                            {/* Delete section button — visible on hover */}
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (!onSectionDelete) return
+                                if (window.confirm(`Delete "${section.title}"? This cannot be undone.`)) {
+                                  onSectionDelete(section.id)
+                                }
+                              }}
+                              className="shrink-0 p-0.5 rounded text-slate-300 hover:text-red-500 hover:bg-red-50 transition-colors opacity-0 group-hover:opacity-100"
+                              aria-label={`Delete section ${section.title}`}
+                              title="Delete section"
+                            >
+                              <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                viewBox="0 0 20 20"
+                                fill="currentColor"
+                                className="size-3.5"
+                                aria-hidden="true"
+                              >
+                                <path d="M6.28 5.22a.75.75 0 0 0-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 1 0 1.06 1.06L10 11.06l3.72 3.72a.75.75 0 1 0 1.06-1.06L11.06 10l3.72-3.72a.75.75 0 0 0-1.06-1.06L10 8.94 6.28 5.22Z" />
+                              </svg>
+                            </button>
+                          </div>
+                        ))}
                       </div>
-                    ))}
-                  </div>
+                    </>
+                  )}
+
+                  {/* Add Section button */}
+                  {onAddSection && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => onAddSection(chapter.id)}
+                      className="w-full h-8 text-xs text-slate-500 hover:text-amber-700 hover:bg-amber-50 border border-dashed border-slate-200 hover:border-amber-300"
+                    >
+                      + Add {labels.section}
+                    </Button>
+                  )}
                 </div>
               )}
             </div>

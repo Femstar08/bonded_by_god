@@ -212,6 +212,58 @@ export function EditorClient({ project, initialChapters, showPrayerPrompt, initi
     )
   }
 
+  const handleChapterDeleted = (chapterId: string) => {
+    setChapters((prev) => {
+      const remaining = prev.filter((c) => c.id !== chapterId)
+      // If the deleted chapter was active, switch to the first remaining one
+      if (chapterId === activeChapterId) {
+        const next = remaining[0]
+        if (next) {
+          setActiveChapterId(next.id)
+          setEditorContent(next.content || '')
+          setWordCount(countWords(next.content))
+        } else {
+          setActiveChapterId('')
+          setEditorContent('')
+          setWordCount(0)
+        }
+      }
+      return remaining
+    })
+    // Also clean up any sections belonging to the deleted chapter
+    setSectionsByChapter((prev) => {
+      const next = { ...prev }
+      delete next[chapterId]
+      return next
+    })
+  }
+
+  const handleSectionAdded = (chapterId: string, section: Section) => {
+    setSectionsByChapter((prev) => ({
+      ...prev,
+      [chapterId]: [...(prev[chapterId] ?? []), section],
+    }))
+  }
+
+  const handleSectionDeleted = (chapterId: string, sectionId: string) => {
+    setSectionsByChapter((prev) => ({
+      ...prev,
+      [chapterId]: (prev[chapterId] ?? []).filter((s) => s.id !== sectionId),
+    }))
+  }
+
+  const handleSectionRenamed = (sectionId: string, newTitle: string) => {
+    setSectionsByChapter((prev) => {
+      const updated: Record<string, Section[]> = {}
+      for (const [chId, sections] of Object.entries(prev)) {
+        updated[chId] = sections.map((s) =>
+          s.id === sectionId ? { ...s, title: newTitle } : s
+        )
+      }
+      return updated
+    })
+  }
+
   const handleApplyAiResult = (result: string) => {
     setEditorContent(result)
     setChapters((prev) =>
@@ -304,9 +356,13 @@ export function EditorClient({ project, initialChapters, showPrayerPrompt, initi
             onSelectChapter={handleChapterSelect}
             onChapterAdded={handleChapterAdded}
             onChapterRenamed={handleChapterRenamed}
+            onChapterDeleted={handleChapterDeleted}
             onSectionSelect={handleSectionSelect}
             onSectionsGenerated={handleSectionsGenerated}
             onSectionStatusChange={handleSectionStatusChange}
+            onSectionAdded={handleSectionAdded}
+            onSectionDeleted={handleSectionDeleted}
+            onSectionRenamed={handleSectionRenamed}
           />
         )}
       </div>

@@ -29,6 +29,7 @@ interface BoardViewProps {
   onStatusChange: (chapterId: string, status: ChapterStatus) => void
   onSectionMove: (sectionId: string, fromChapterId: string, toChapterId: string, toPosition: number) => void
   onMoveToPart: (chapterId: string, partId: string | null) => void
+  onDeleteChapter?: (chapterId: string) => void
 }
 
 // ─── Color label left-border helper ───────────────────────
@@ -63,6 +64,7 @@ export function BoardView({
   onStatusChange,
   onSectionMove,
   onMoveToPart,
+  onDeleteChapter,
 }: BoardViewProps) {
   const labels = hierarchyLabels
 
@@ -202,18 +204,48 @@ export function BoardView({
                   : 'border-slate-600 hover:border-slate-500'
               }`}
             >
-              <div className="px-3 py-4">
-                <button
-                  type="button"
-                  onClick={() => onChapterClick(chapter.id)}
-                  className="w-full text-left group"
-                  aria-label={`Open part details: ${chapter.title}`}
-                >
-                  <p className="text-[10px] text-amber-400/60 uppercase tracking-widest mb-1">{labels.part}</p>
-                  <h3 className="font-serif text-sm font-semibold text-amber-100 group-hover:text-amber-50 transition-colors line-clamp-2">
-                    {chapter.title}
-                  </h3>
-                </button>
+              <div className="px-3 py-4 group/part">
+                <div className="flex items-start justify-between gap-1">
+                  <button
+                    type="button"
+                    onClick={() => onChapterClick(chapter.id)}
+                    className="flex-1 text-left group min-w-0"
+                    aria-label={`Open part details: ${chapter.title}`}
+                  >
+                    <p className="text-[10px] text-amber-400/60 uppercase tracking-widest mb-1">{labels.part}</p>
+                    <h3 className="font-serif text-sm font-semibold text-amber-100 group-hover:text-amber-50 transition-colors line-clamp-2">
+                      {chapter.title}
+                    </h3>
+                  </button>
+                  {onDeleteChapter && (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        if (window.confirm(`Delete "${chapter.title}"? This cannot be undone.`)) {
+                          onDeleteChapter(chapter.id)
+                        }
+                      }}
+                      className="shrink-0 p-0.5 rounded text-white/20 hover:text-red-400 hover:bg-white/10 transition-colors opacity-0 group-hover/part:opacity-100"
+                      aria-label={`Delete part ${chapter.title}`}
+                      title="Delete part"
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 20 20"
+                        fill="currentColor"
+                        className="size-3.5"
+                        aria-hidden="true"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M8.75 1A2.75 2.75 0 0 0 6 3.75v.443c-.795.077-1.584.176-2.365.298a.75.75 0 1 0 .23 1.482l.149-.022.841 10.518A2.75 2.75 0 0 0 7.596 19h4.807a2.75 2.75 0 0 0 2.742-2.53l.841-10.52.149.023a.75.75 0 0 0 .23-1.482A41.03 41.03 0 0 0 14 4.193V3.75A2.75 2.75 0 0 0 11.25 1h-2.5ZM10 4c.84 0 1.673.025 2.5.075V3.75c0-.69-.56-1.25-1.25-1.25h-2.5c-.69 0-1.25.56-1.25 1.25v.325C8.327 4.025 9.16 4 10 4ZM8.58 7.72a.75.75 0 0 0-1.5.06l.3 7.5a.75.75 0 1 0 1.5-.06l-.3-7.5Zm4.34.06a.75.75 0 1 0-1.5-.06l-.3 7.5a.75.75 0 1 0 1.5.06l.3-7.5Z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                    </button>
+                  )}
+                </div>
                 {chapter.synopsis && (
                   <p className="text-[10px] text-white/50 mt-2 line-clamp-4 leading-relaxed">
                     {chapter.synopsis}
@@ -241,28 +273,58 @@ export function BoardView({
             style={{ borderLeft: `5px solid ${borderColor}` }}
           >
             {/* Column header */}
-            <div className="px-3 pt-3 pb-2 border-b border-slate-100">
-              <button
-                type="button"
-                onClick={() => onChapterClick(chapter.id)}
-                className="w-full text-left group"
-                aria-label={`Open ${labels.chapter.toLowerCase()} details: ${chapter.title}`}
-              >
-                <div className="flex items-start justify-between gap-2">
-                  <h3 className="font-serif text-sm font-semibold text-[#0f1a2e] leading-snug group-hover:text-amber-700 transition-colors line-clamp-2">
-                    {chapter.title}
-                  </h3>
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    viewBox="0 0 20 20"
-                    fill="currentColor"
-                    className="size-3.5 shrink-0 mt-0.5 text-slate-400 group-hover:text-amber-500 transition-colors"
-                    aria-hidden="true"
+            <div className="px-3 pt-3 pb-2 border-b border-slate-100 group/header">
+              <div className="flex items-start gap-1">
+                <button
+                  type="button"
+                  onClick={() => onChapterClick(chapter.id)}
+                  className="flex-1 min-w-0 text-left group"
+                  aria-label={`Open ${labels.chapter.toLowerCase()} details: ${chapter.title}`}
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <h3 className="font-serif text-sm font-semibold text-[#0f1a2e] leading-snug group-hover:text-amber-700 transition-colors line-clamp-2">
+                      {chapter.title}
+                    </h3>
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 20 20"
+                      fill="currentColor"
+                      className="size-3.5 shrink-0 mt-0.5 text-slate-400 group-hover:text-amber-500 transition-colors"
+                      aria-hidden="true"
+                    >
+                      <path d="M13.586 3.586a2 2 0 1 1 2.828 2.828l-.793.793-2.828-2.828.793-.793ZM11.379 5.793 3 14.172V17h2.828l8.38-8.379-2.83-2.828Z" />
+                    </svg>
+                  </div>
+                </button>
+                {onDeleteChapter && (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      if (window.confirm(`Delete "${chapter.title}"? This cannot be undone.`)) {
+                        onDeleteChapter(chapter.id)
+                      }
+                    }}
+                    className="shrink-0 p-0.5 rounded text-slate-300 hover:text-red-500 hover:bg-red-50 transition-colors opacity-0 group-hover/header:opacity-100"
+                    aria-label={`Delete ${labels.chapter.toLowerCase()} ${chapter.title}`}
+                    title={`Delete ${labels.chapter}`}
                   >
-                    <path d="M13.586 3.586a2 2 0 1 1 2.828 2.828l-.793.793-2.828-2.828.793-.793ZM11.379 5.793 3 14.172V17h2.828l8.38-8.379-2.83-2.828Z" />
-                  </svg>
-                </div>
-              </button>
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 20 20"
+                      fill="currentColor"
+                      className="size-3.5"
+                      aria-hidden="true"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M8.75 1A2.75 2.75 0 0 0 6 3.75v.443c-.795.077-1.584.176-2.365.298a.75.75 0 1 0 .23 1.482l.149-.022.841 10.518A2.75 2.75 0 0 0 7.596 19h4.807a2.75 2.75 0 0 0 2.742-2.53l.841-10.52.149.023a.75.75 0 0 0 .23-1.482A41.03 41.03 0 0 0 14 4.193V3.75A2.75 2.75 0 0 0 11.25 1h-2.5ZM10 4c.84 0 1.673.025 2.5.075V3.75c0-.69-.56-1.25-1.25-1.25h-2.5c-.69 0-1.25.56-1.25 1.25v.325C8.327 4.025 9.16 4 10 4ZM8.58 7.72a.75.75 0 0 0-1.5.06l.3 7.5a.75.75 0 1 0 1.5-.06l-.3-7.5Zm4.34.06a.75.75 0 1 0-1.5-.06l-.3 7.5a.75.75 0 1 0 1.5.06l.3-7.5Z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                  </button>
+                )}
+              </div>
 
               <div className="flex items-center gap-2 mt-1.5 flex-wrap">
                 <StatusBadge status={chapter.status} size="sm" />
