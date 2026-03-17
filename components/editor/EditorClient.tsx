@@ -273,6 +273,33 @@ export function EditorClient({ project, initialChapters, showPrayerPrompt, initi
     setEditorKey((k) => k + 1)
   }
 
+  // Insert AI result after a specific paragraph in the content (non-destructive)
+  const handleInsertAfterParagraph = useCallback((paragraph: string, insertion: string) => {
+    if (!insertion || !paragraph) return
+    // Find the paragraph in the HTML content and insert after it
+    const escapedPara = paragraph.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+    const paraRegex = new RegExp(`(<p>[^<]*${escapedPara.slice(0, 40)}[^<]*</p>)`, 'i')
+    const match = editorContent.match(paraRegex)
+    let newContent: string
+    if (match && match.index !== undefined) {
+      const insertPos = match.index + match[0].length
+      newContent = editorContent.slice(0, insertPos) + `<p>${insertion}</p>` + editorContent.slice(insertPos)
+    } else {
+      // Fallback: append to end
+      newContent = editorContent + `<p>${insertion}</p>`
+    }
+    handleApplyAiResult(newContent)
+  }, [editorContent, handleApplyAiResult])
+
+  // Replace only a specific text selection within the content (non-destructive)
+  const handleReplaceSelection = useCallback((selectedText: string, replacement: string) => {
+    if (!replacement || !selectedText) return
+    const newContent = editorContent.replace(selectedText, replacement)
+    if (newContent !== editorContent) {
+      handleApplyAiResult(newContent)
+    }
+  }, [editorContent, handleApplyAiResult])
+
   // Floating toolbar AI action handler — triggers orchestrator with selected text
   const handleAiAction = useCallback(async (action: string, selectedText: string) => {
     if (!baseContext || !selectedText.trim()) return
@@ -300,12 +327,13 @@ export function EditorClient({ project, initialChapters, showPrayerPrompt, initi
       })
       const data = await res.json()
       if (data.result && typeof data.result === 'string') {
-        handleApplyAiResult(data.result)
+        // Replace only the selected text, not the entire content
+        handleReplaceSelection(selectedText, data.result)
       }
     } catch {
       // Non-critical
     }
-  }, [baseContext, handleApplyAiResult])
+  }, [baseContext, handleReplaceSelection])
 
   // Writing Team agent handler — triggers orchestrator and applies result
   const handleTeamAgent = (action: WritingTeamAction) => {
@@ -565,21 +593,22 @@ export function EditorClient({ project, initialChapters, showPrayerPrompt, initi
               {/* Insight Markers — pattern detection pills */}
               <InsightMarkers
                 editorContent={editorContent}
-                onAction={(action, text) => {
-                  if (!baseContext || !text.trim()) return
+                onAction={(action, paragraphText) => {
+                  if (!baseContext || !paragraphText.trim()) return
                   fetch('/api/orchestrate', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                       action,
-                      userText: text,
+                      userText: paragraphText,
                       context: baseContext,
                     }),
                   })
                     .then((res) => res.json())
                     .then((data) => {
                       if (data.result && typeof data.result === 'string') {
-                        handleApplyAiResult(data.result)
+                        // Insert AI result after the matched paragraph, don't replace everything
+                        handleInsertAfterParagraph(paragraphText, data.result)
                       }
                     })
                     .catch(() => {})
