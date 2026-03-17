@@ -1,9 +1,10 @@
 'use client'
 
 import { useRef, useState } from 'react'
-import { Chapter, Section, ChapterStatus, SectionStatus, ColorLabel } from '@/types/database'
+import { Chapter, Section, ChapterStatus, SectionStatus, ColorLabel, HierarchyLabels } from '@/types/database'
 import { Button } from '@/components/ui/button'
 import { StatusBadge } from './StatusBadge'
+import { MoveToPartSelector } from './MoveToPartSelector'
 
 // ────────────────────────────────────────────────────────────
 // Extended types for planner (sections are nested on chapter)
@@ -18,6 +19,8 @@ export type PlannerChapter = Omit<Chapter, 'content'> & {
 interface BoardViewProps {
   chapters: PlannerChapter[]
   projectType: string
+  hierarchyLabels: HierarchyLabels
+  parts: { id: string; title: string }[]
   onReorder: (fromIndex: number, toIndex: number) => void
   onAddChapter: () => void
   onAddPart: () => void
@@ -25,6 +28,7 @@ interface BoardViewProps {
   onChapterClick: (chapterId: string) => void
   onStatusChange: (chapterId: string, status: ChapterStatus) => void
   onSectionMove: (sectionId: string, fromChapterId: string, toChapterId: string, toPosition: number) => void
+  onMoveToPart: (chapterId: string, partId: string | null) => void
 }
 
 // ─── Color label left-border helper ───────────────────────
@@ -38,11 +42,6 @@ const COLOR_LABEL_HEX: Record<NonNullable<ColorLabel>, string> = {
   purple: '#BA68C8',
 }
 
-function getProjectLabels(projectType: string) {
-  if (projectType === 'sermon') return { chapter: 'Sermon', section: 'Point' }
-  return { chapter: 'Chapter', section: 'Section' }
-}
-
 // ─── Drag data ─────────────────────────────────────────────
 interface DragData {
   type: 'chapter' | 'section'
@@ -53,7 +52,9 @@ interface DragData {
 
 export function BoardView({
   chapters,
-  projectType,
+  projectType: _projectType,
+  hierarchyLabels,
+  parts,
   onReorder,
   onAddChapter,
   onAddPart,
@@ -61,8 +62,9 @@ export function BoardView({
   onChapterClick,
   onStatusChange,
   onSectionMove,
+  onMoveToPart,
 }: BoardViewProps) {
-  const labels = getProjectLabels(projectType)
+  const labels = hierarchyLabels
 
   // Track which element is being dragged over for visual feedback
   const [dragOverChapterIndex, setDragOverChapterIndex] = useState<number | null>(null)
@@ -207,7 +209,7 @@ export function BoardView({
                   className="w-full text-left group"
                   aria-label={`Open part details: ${chapter.title}`}
                 >
-                  <p className="text-[10px] text-amber-400/60 uppercase tracking-widest mb-1">Part</p>
+                  <p className="text-[10px] text-amber-400/60 uppercase tracking-widest mb-1">{labels.part}</p>
                   <h3 className="font-serif text-sm font-semibold text-amber-100 group-hover:text-amber-50 transition-colors line-clamp-2">
                     {chapter.title}
                   </h3>
@@ -262,14 +264,33 @@ export function BoardView({
                 </div>
               </button>
 
-              <div className="flex items-center gap-2 mt-1.5">
+              <div className="flex items-center gap-2 mt-1.5 flex-wrap">
                 <StatusBadge status={chapter.status} size="sm" />
                 {chapter.word_count > 0 && (
                   <span className="text-[10px] text-slate-400">
                     {chapter.word_count.toLocaleString()} words
                   </span>
                 )}
+                {chapter.parent_id && (() => {
+                  const partTitle = parts.find((p) => p.id === chapter.parent_id)?.title
+                  return partTitle ? (
+                    <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700 border border-amber-200 font-medium truncate max-w-[80px]">
+                      {partTitle}
+                    </span>
+                  ) : null
+                })()}
               </div>
+              {parts.length > 0 && (
+                <div className="mt-1.5" onClick={(e) => e.stopPropagation()}>
+                  <MoveToPartSelector
+                    currentPartId={chapter.parent_id ?? null}
+                    parts={parts}
+                    partLabel={labels.part}
+                    onMove={(partId) => onMoveToPart(chapter.id, partId)}
+                    compact
+                  />
+                </div>
+              )}
             </div>
 
             {/* Section cards */}
@@ -368,7 +389,7 @@ export function BoardView({
           >
             <path d="M10.75 4.75a.75.75 0 0 0-1.5 0v4.5h-4.5a.75.75 0 0 0 0 1.5h4.5v4.5a.75.75 0 0 0 1.5 0v-4.5h4.5a.75.75 0 0 0 0-1.5h-4.5v-4.5Z" />
           </svg>
-          Add Part
+          Add {labels.part}
         </button>
       </div>
     </div>

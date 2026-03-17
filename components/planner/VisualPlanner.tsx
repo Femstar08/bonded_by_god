@@ -439,6 +439,7 @@ export function VisualPlanner({
             word_count: c.word_count,
             type: c.type,
           }))}
+          hierarchyLabels={labels}
         />
 
         {/* Close button */}
@@ -545,6 +546,8 @@ export function VisualPlanner({
               <BoardView
                 chapters={filteredChapters}
                 projectType={projectType}
+                hierarchyLabels={labels}
+                parts={parts}
                 onReorder={handleReorder}
                 onAddChapter={() => handleAdd('chapter')}
                 onAddPart={() => handleAdd('part')}
@@ -552,11 +555,14 @@ export function VisualPlanner({
                 onChapterClick={(id) => setSelectedChapterId(id)}
                 onStatusChange={handleStatusChange}
                 onSectionMove={handleSectionMove}
+                onMoveToPart={handleMoveToPart}
               />
             ) : (
               <CorkBoardView
                 chapters={filteredChapters}
                 projectType={projectType}
+                hierarchyLabels={labels}
+                parts={parts}
                 onReorder={handleReorder}
                 onAddChapter={() => handleAdd('chapter')}
                 onAddPart={() => handleAdd('part')}
@@ -565,6 +571,7 @@ export function VisualPlanner({
                 onColorChange={handleColorChange}
                 onSynopsisChange={handleSynopsisChange}
                 onTitleChange={handleTitleChange}
+                onMoveToPart={handleMoveToPart}
               />
             )}
           </>

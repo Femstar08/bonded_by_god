@@ -1,13 +1,16 @@
 'use client'
 
 import { useRef, useState, useEffect } from 'react'
-import { ChapterStatus, ColorLabel } from '@/types/database'
+import { ChapterStatus, ColorLabel, HierarchyLabels } from '@/types/database'
 import { StatusBadge } from './StatusBadge'
 import type { PlannerChapter } from './BoardView'
+import { MoveToPartSelector } from './MoveToPartSelector'
 
 interface CorkBoardViewProps {
   chapters: PlannerChapter[]
   projectType: string
+  hierarchyLabels: HierarchyLabels
+  parts: { id: string; title: string }[]
   onReorder: (fromIndex: number, toIndex: number) => void
   onAddChapter: () => void
   onAddPart: () => void
@@ -16,6 +19,7 @@ interface CorkBoardViewProps {
   onColorChange: (chapterId: string, color: ColorLabel) => void
   onSynopsisChange: (chapterId: string, synopsis: string) => void
   onTitleChange: (chapterId: string, title: string) => void
+  onMoveToPart: (chapterId: string, partId: string | null) => void
 }
 
 // ─── Color label constants ─────────────────────────────────
@@ -45,16 +49,13 @@ const STATUS_LABELS: Record<ChapterStatus, string> = {
   complete: 'Complete',
 }
 
-function getProjectLabels(projectType: string) {
-  if (projectType === 'sermon') return { chapter: 'Sermon', section: 'Point' }
-  return { chapter: 'Chapter', section: 'Section' }
-}
-
 // ─── Individual card component ────────────────────────────
 interface ChapterCardProps {
   chapter: PlannerChapter
   index: number
   isDragOver: boolean
+  parts: { id: string; title: string }[]
+  partLabel: string
   onDragStart: (e: React.DragEvent<HTMLDivElement>, index: number) => void
   onDragOver: (e: React.DragEvent<HTMLDivElement>, index: number) => void
   onDrop: (e: React.DragEvent<HTMLDivElement>, index: number) => void
@@ -64,12 +65,15 @@ interface ChapterCardProps {
   onColorChange: (chapterId: string, color: ColorLabel) => void
   onSynopsisChange: (chapterId: string, synopsis: string) => void
   onTitleChange: (chapterId: string, title: string) => void
+  onMoveToPart: (chapterId: string, partId: string | null) => void
 }
 
 function ChapterCard({
   chapter,
   index,
   isDragOver,
+  parts,
+  partLabel,
   onDragStart,
   onDragOver,
   onDrop,
@@ -79,6 +83,7 @@ function ChapterCard({
   onColorChange,
   onSynopsisChange,
   onTitleChange,
+  onMoveToPart,
 }: ChapterCardProps) {
   const [isEditingTitle, setIsEditingTitle] = useState(false)
   const [editTitle, setEditTitle] = useState(chapter.title)
@@ -182,7 +187,7 @@ function ChapterCard({
         </div>
 
         {/* Status select */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <select
             value={chapter.status}
             onChange={(e) => onStatusChange(chapter.id, e.target.value as ChapterStatus)}
@@ -198,6 +203,15 @@ function ChapterCard({
           </select>
 
           <StatusBadge status={chapter.status} size="sm" />
+
+          {chapter.parent_id && (() => {
+            const partTitle = parts.find((p) => p.id === chapter.parent_id)?.title
+            return partTitle ? (
+              <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700 border border-amber-200 font-medium truncate max-w-[80px]">
+                {partTitle}
+              </span>
+            ) : null
+          })()}
         </div>
       </div>
 
@@ -215,7 +229,7 @@ function ChapterCard({
         )}
       </div>
 
-      {/* Footer: word count + color picker */}
+      {/* Footer: word count + part selector + color picker */}
       <div className="px-3 pb-3 flex items-center justify-between gap-2">
         {chapter.word_count > 0 ? (
           <span className="text-[10px] text-slate-400 font-medium">
@@ -223,6 +237,18 @@ function ChapterCard({
           </span>
         ) : (
           <span />
+        )}
+
+        {parts.length > 0 && (
+          <div className="flex-1 max-w-[100px]" onClick={(e) => e.stopPropagation()}>
+            <MoveToPartSelector
+              currentPartId={chapter.parent_id ?? null}
+              parts={parts}
+              partLabel={partLabel}
+              onMove={(partId) => onMoveToPart(chapter.id, partId)}
+              compact
+            />
+          </div>
         )}
 
         {/* Color label picker */}
@@ -315,7 +341,9 @@ function ChapterCard({
 // ─── Main CorkBoardView ────────────────────────────────────
 export function CorkBoardView({
   chapters,
-  projectType,
+  projectType: _projectType,
+  hierarchyLabels,
+  parts,
   onReorder,
   onAddChapter,
   onAddPart,
@@ -324,8 +352,9 @@ export function CorkBoardView({
   onColorChange,
   onSynopsisChange,
   onTitleChange,
+  onMoveToPart,
 }: CorkBoardViewProps) {
-  const labels = getProjectLabels(projectType)
+  const labels = hierarchyLabels
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null)
   const dragFromIndex = useRef<number | null>(null)
 
@@ -382,7 +411,7 @@ export function CorkBoardView({
                   className="w-full text-left"
                 >
                   <div className="bg-[#0f1a2e] rounded-lg px-4 py-3 flex items-center gap-3 group hover:bg-[#142035] transition-colors">
-                    <p className="text-[10px] text-amber-400/60 uppercase tracking-widest shrink-0">Part</p>
+                    <p className="text-[10px] text-amber-400/60 uppercase tracking-widest shrink-0">{labels.part}</p>
                     <h3 className="font-serif text-sm font-semibold text-amber-100 group-hover:text-amber-50 transition-colors">
                       {chapter.title}
                     </h3>
@@ -404,6 +433,8 @@ export function CorkBoardView({
               chapter={chapter}
               index={index}
               isDragOver={dragOverIndex === index}
+              parts={parts}
+              partLabel={labels.part}
               onDragStart={handleDragStart}
               onDragOver={handleDragOver}
               onDrop={handleDrop}
@@ -413,6 +444,7 @@ export function CorkBoardView({
               onColorChange={onColorChange}
               onSynopsisChange={onSynopsisChange}
               onTitleChange={onTitleChange}
+              onMoveToPart={onMoveToPart}
             />
           )
         })}
@@ -450,7 +482,7 @@ export function CorkBoardView({
           >
             <path d="M10.75 4.75a.75.75 0 0 0-1.5 0v4.5h-4.5a.75.75 0 0 0 0 1.5h4.5v4.5a.75.75 0 0 0 1.5 0v-4.5h4.5a.75.75 0 0 0 0-1.5h-4.5v-4.5Z" />
           </svg>
-          Add Part
+          Add {labels.part}
         </button>
       </div>
     </div>

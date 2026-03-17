@@ -20,6 +20,7 @@ interface PlannerHeaderProps {
   statusFilters: ChapterStatus[]
   onStatusFiltersChange: (filters: ChapterStatus[]) => void
   chapters: PlannerChapter[]
+  hierarchyLabels?: { part: string; chapter: string; section: string }
 }
 
 const ALL_STATUSES: ChapterStatus[] = [
@@ -65,7 +66,13 @@ export function PlannerHeader({
   statusFilters,
   onStatusFiltersChange,
   chapters,
+  hierarchyLabels,
 }: PlannerHeaderProps) {
+  const chapterLabel = hierarchyLabels?.chapter ?? 'Chapter'
+  const chapterLabelLower = chapterLabel.toLowerCase()
+  const chapterLabelPlural = `${chapterLabel}s`
+  const chapterLabelPluralLower = chapterLabelPlural.toLowerCase()
+
   // Exclude parts from stats — they're structural, not content
   const chapterItems = chapters.filter((c) => c.type !== 'part')
   const total = chapterItems.length
@@ -215,7 +222,7 @@ export function PlannerHeader({
         <div className="ml-auto">
           <Input
             type="search"
-            placeholder="Search chapters..."
+            placeholder={`Search ${chapterLabelPluralLower}...`}
             value={searchQuery}
             onChange={(e) => onSearchChange(e.target.value)}
             className="h-7 w-48 text-xs bg-white/10 border-white/20 text-white placeholder:text-white/40 focus-visible:ring-amber-400/50"
@@ -279,7 +286,7 @@ export function PlannerHeader({
                   >
                     {STATUS_LABELS[status]}:
                   </span>{' '}
-                  {count} {count === 1 ? 'chapter' : 'chapters'}
+                  {count} {count === 1 ? chapterLabelLower : chapterLabelPluralLower}
                   {words > 0 && (
                     <span className="text-white/40">
                       , {words.toLocaleString()} words

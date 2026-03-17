@@ -336,6 +336,18 @@ export function EditorClient({ project, initialChapters, showPrayerPrompt, initi
                   <path fillRule="evenodd" d="M4.25 2A2.25 2.25 0 0 0 2 4.25v2.5A2.25 2.25 0 0 0 4.25 9h2.5A2.25 2.25 0 0 0 9 6.75v-2.5A2.25 2.25 0 0 0 6.75 2h-2.5Zm0 9A2.25 2.25 0 0 0 2 13.25v2.5A2.25 2.25 0 0 0 4.25 18h2.5A2.25 2.25 0 0 0 9 15.75v-2.5A2.25 2.25 0 0 0 6.75 11h-2.5Zm9-9A2.25 2.25 0 0 0 11 4.25v2.5A2.25 2.25 0 0 0 13.25 9h2.5A2.25 2.25 0 0 0 18 6.75v-2.5A2.25 2.25 0 0 0 15.75 2h-2.5Zm0 9A2.25 2.25 0 0 0 11 13.25v2.5A2.25 2.25 0 0 0 13.25 18h2.5A2.25 2.25 0 0 0 18 15.75v-2.5A2.25 2.25 0 0 0 15.75 11h-2.5Z" clipRule="evenodd" />
                 </svg>
               </button>
+              {/* Export Project shortcut — opens export modal pre-scoped to project */}
+              <button
+                onClick={() => setExportOpen(true)}
+                className="p-1 rounded hover:bg-white/10 transition-colors"
+                aria-label="Export project"
+                title="Export Project"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="size-4">
+                  <path d="M10.75 2.75a.75.75 0 0 0-1.5 0v8.614L6.295 8.235a.75.75 0 1 0-1.09 1.03l4.25 4.5a.75.75 0 0 0 1.09 0l4.25-4.5a.75.75 0 0 0-1.09-1.03l-2.955 3.129V2.75Z" />
+                  <path d="M3.5 12.75a.75.75 0 0 0-1.5 0v2.5A2.75 2.75 0 0 0 4.75 18h10.5A2.75 2.75 0 0 0 18 15.25v-2.5a.75.75 0 0 0-1.5 0v2.5c0 .69-.56 1.25-1.25 1.25H4.75c-.69 0-1.25-.56-1.25-1.25v-2.5Z" />
+                </svg>
+              </button>
               <span className="text-amber-300 font-medium">{activeChapter.title}</span>
             </div>
             <div className="flex items-center gap-3">
@@ -562,6 +574,8 @@ export function EditorClient({ project, initialChapters, showPrayerPrompt, initi
         chapterId={activeChapter.id}
         chapterTitle={activeChapter.title}
         chapterContent={editorContent}
+        chapterParentId={activeChapter.parent_id}
+        projectType={project.type}
       />
 
       {/* Repurpose Modal */}

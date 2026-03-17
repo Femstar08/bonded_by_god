@@ -13,6 +13,8 @@ import {
 // Types
 // ---------------------------------------------------------------------------
 
+type ExportScope = 'chapter' | 'part' | 'project'
+
 interface ExportModalProps {
   isOpen: boolean
   onClose: () => void
@@ -21,6 +23,10 @@ interface ExportModalProps {
   chapterId: string
   chapterTitle: string
   chapterContent: string
+  /** The parent_id of the active chapter — set when the chapter belongs to a part. */
+  chapterParentId?: string | null
+  /** The project type, used for labels (e.g. "book", "sermon"). */
+  projectType?: string
 }
 
 type ExportFormat = 'pdf' | 'docx' | 'email'
@@ -167,12 +173,52 @@ function CheckIcon() {
 // Utility — slugify a filename
 // ---------------------------------------------------------------------------
 
-function toFilename(projectTitle: string, chapterTitle: string, ext: string) {
-  const slug = `${projectTitle}-${chapterTitle}`
+function toFilename(label: string, ext: string) {
+  const slug = label
     .toLowerCase()
     .replace(/\s+/g, '-')
     .replace(/[^a-z0-9-]/g, '')
   return `${slug}.${ext}`
+}
+
+// ---------------------------------------------------------------------------
+// Scope selector
+// ---------------------------------------------------------------------------
+
+interface ScopeSelectorProps {
+  scope: ExportScope
+  showPartOption: boolean
+  onChange: (scope: ExportScope) => void
+}
+
+function ScopeSelector({ scope, showPartOption, onChange }: ScopeSelectorProps) {
+  const tabs: { id: ExportScope; label: string }[] = [
+    { id: 'chapter', label: 'This Chapter' },
+    ...(showPartOption ? [{ id: 'part' as ExportScope, label: 'This Part' }] : []),
+    { id: 'project', label: 'Full Project' },
+  ]
+
+  return (
+    <div className="flex gap-1 bg-muted/40 rounded-lg p-1" role="tablist" aria-label="Export scope">
+      {tabs.map((tab) => (
+        <button
+          key={tab.id}
+          type="button"
+          role="tab"
+          aria-selected={scope === tab.id}
+          onClick={() => onChange(tab.id)}
+          className={[
+            'flex-1 text-xs font-medium py-1.5 px-2 rounded-md transition-all duration-150',
+            scope === tab.id
+              ? 'bg-background text-amber-700 shadow-sm border border-amber-200'
+              : 'text-muted-foreground hover:text-foreground',
+          ].join(' ')}
+        >
+          {tab.label}
+        </button>
+      ))}
+    </div>
+  )
 }
 
 // ---------------------------------------------------------------------------
@@ -187,12 +233,17 @@ export function ExportModal({
   chapterId,
   chapterTitle,
   chapterContent,
+  chapterParentId,
+  projectType,
 }: ExportModalProps) {
+  const hasParent = !!chapterParentId
+
   // Per-card state machine: idle | loading | success | error
   const [pdfState, setPdfState] = useState<CardState>('idle')
   const [docxState, setDocxState] = useState<CardState>('idle')
   const [emailState, setEmailState] = useState<CardState>('idle')
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const [scope, setScope] = useState<ExportScope>('chapter')
 
   // Reset all states when the modal reopens
   const handleOpenChange = (open: boolean) => {
@@ -203,8 +254,16 @@ export function ExportModal({
       setDocxState('idle')
       setEmailState('idle')
       setErrorMessage(null)
+      setScope('chapter')
     }
   }
+
+  // Derived label shown in the description and filename
+  const scopeLabel: string = (() => {
+    if (scope === 'chapter') return chapterTitle
+    if (scope === 'part') return `part containing "${chapterTitle}"`
+    return projectTitle
+  })()
 
   // -------------------------------------------------------------------------
   // PDF / DOCX — binary download via API
@@ -217,11 +276,31 @@ export function ExportModal({
     setErrorMessage(null)
     setState('loading')
 
+    // Build the request body based on scope
+    const requestBody: Record<string, string> = { projectId, format, scope }
+    if (scope === 'chapter') {
+      requestBody.chapterId = chapterId
+    } else if (scope === 'part' && chapterParentId) {
+      requestBody.partId = chapterParentId
+    }
+    // scope === 'project' requires only projectId
+
+    // Derive the download filename on the client side
+    let downloadFilename: string
+    if (scope === 'chapter') {
+      downloadFilename = toFilename(`${projectTitle}-${chapterTitle}`, ext)
+    } else if (scope === 'part') {
+      // The server names it project-part; use a generic label client-side
+      downloadFilename = toFilename(`${projectTitle}-part`, ext)
+    } else {
+      downloadFilename = toFilename(projectTitle, ext)
+    }
+
     try {
       const res = await fetch('/api/export', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ chapterId, projectId, format }),
+        body: JSON.stringify(requestBody),
       })
 
       if (!res.ok) {
@@ -233,7 +312,7 @@ export function ExportModal({
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
-      a.download = toFilename(projectTitle, chapterTitle, ext)
+      a.download = downloadFilename
       a.click()
       URL.revokeObjectURL(url)
 
@@ -259,6 +338,11 @@ export function ExportModal({
   // -------------------------------------------------------------------------
 
   async function handleEmailCopy() {
+    // For part/project scopes, we show a note instead of copying
+    if (scope !== 'chapter') {
+      return
+    }
+
     setErrorMessage(null)
     setEmailState('loading')
 
@@ -291,6 +375,12 @@ export function ExportModal({
   // Export card definitions
   // -------------------------------------------------------------------------
 
+  // For part/project scopes the email card shows an informational note instead
+  const emailDescription =
+    scope === 'chapter'
+      ? 'Copy formatted text to your clipboard'
+      : 'For large exports, use PDF or Word format'
+
   const cards: {
     format: ExportFormat
     icon: React.ReactNode
@@ -299,6 +389,7 @@ export function ExportModal({
     state: CardState
     onClick: () => void
     successLabel: string
+    disabled?: boolean
   }[] = [
     {
       format: 'pdf',
@@ -322,15 +413,22 @@ export function ExportModal({
       format: 'email',
       icon: <EmailIcon />,
       title: 'Copy as Email Draft',
-      description: 'Copy formatted text to your clipboard',
+      description: emailDescription,
       state: emailState,
       onClick: handleEmailCopy,
       successLabel: 'Copied!',
+      // Disable (make informational) when scope is not chapter
+      disabled: scope !== 'chapter',
     },
   ]
 
   // Whether any card is mid-flight — prevents double-triggering
   const anyLoading = pdfState === 'loading' || docxState === 'loading' || emailState === 'loading'
+
+  // Human-readable scope description for the dialog subtitle
+  const scopeTypeLabel = projectType
+    ? projectType.charAt(0).toUpperCase() + projectType.slice(1)
+    : 'Project'
 
   return (
     <Dialog open={isOpen} onOpenChange={handleOpenChange}>
@@ -341,13 +439,27 @@ export function ExportModal({
         {/* Header */}
         <DialogHeader className="px-6 pt-6 pb-2">
           <DialogTitle className="text-xl font-serif font-semibold text-foreground">
-            Export Chapter
+            Export
           </DialogTitle>
           <DialogDescription id="export-modal-description" className="text-sm text-muted-foreground">
-            Choose a format to export{' '}
-            <span className="font-medium text-foreground/80">{chapterTitle}</span>
+            {scope === 'project'
+              ? `Exporting full ${scopeTypeLabel.toLowerCase()}: `
+              : 'Exporting '}
+            <span className="font-medium text-foreground/80">{scopeLabel}</span>
           </DialogDescription>
         </DialogHeader>
+
+        {/* Scope selector */}
+        <div className="px-6 pb-3">
+          <ScopeSelector
+            scope={scope}
+            showPartOption={hasParent}
+            onChange={(newScope) => {
+              setScope(newScope)
+              setErrorMessage(null)
+            }}
+          />
+        </div>
 
         {/* Cards */}
         <div className="flex flex-col gap-3 px-6 pb-2" role="list" aria-label="Export format options">
@@ -355,7 +467,7 @@ export function ExportModal({
             const isLoading = card.state === 'loading'
             const isSuccess = card.state === 'success'
             const isError = card.state === 'error'
-            const isDisabled = anyLoading
+            const isDisabled = anyLoading || card.disabled
 
             return (
               <button
@@ -371,10 +483,12 @@ export function ExportModal({
                   'flex items-center gap-4 w-full text-left rounded-lg border p-4 transition-all duration-150',
                   // Default border + bg
                   'border-border bg-background',
-                  // Hover — only when not disabled
-                  !isDisabled
-                    ? 'hover:border-amber-300 hover:bg-amber-50 cursor-pointer'
-                    : 'opacity-60 cursor-not-allowed',
+                  // Disabled / informational email card for non-chapter scopes
+                  card.disabled
+                    ? 'opacity-50 cursor-default'
+                    : !anyLoading
+                      ? 'hover:border-amber-300 hover:bg-amber-50 cursor-pointer'
+                      : 'opacity-60 cursor-not-allowed',
                   // Active states
                   isLoading && 'border-amber-300 bg-amber-50',
                   isSuccess && 'border-green-400 bg-green-50',
