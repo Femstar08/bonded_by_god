@@ -36,7 +36,7 @@ export async function GET(
   // Fetch chapters — include content only for word-count calculation, not returned to client
   const { data: chapters, error: chaptersError } = await supabase
     .from('ltu_chapters')
-    .select('id, title, position, status, synopsis, color_label, word_goal, content, type, created_at, updated_at')
+    .select('id, title, position, status, synopsis, color_label, word_goal, content, type, parent_id, created_at, updated_at')
     .eq('project_id', projectId)
     .order('position', { ascending: true })
 

@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState, useCallback } from 'react'
-import { ChapterStatus, ColorLabel, SectionStatus } from '@/types/database'
+import { ChapterStatus, ColorLabel, SectionStatus, HierarchyLabels } from '@/types/database'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Input } from '@/components/ui/input'
@@ -14,15 +14,22 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { StatusBadge } from './StatusBadge'
+import { MoveToPartSelector } from './MoveToPartSelector'
+import { DeletePartModal } from './DeletePartModal'
 import type { PlannerChapter, PlannerSection } from './BoardView'
 
 interface ChapterDetailPanelProps {
   chapter: PlannerChapter | null
   projectType: string
+  hierarchyLabels?: HierarchyLabels
+  parts?: { id: string; title: string }[]
   isOpen: boolean
   onClose: () => void
   onUpdate: (chapterId: string, updates: Partial<PlannerChapter>) => void
   onNavigateToEditor: (chapterId: string) => void
+  onMoveToPart?: (chapterId: string, partId: string | null) => void
+  onDeletePart?: (partId: string, mode: 'merge_previous' | 'ungrouped' | 'delete_all') => void
+  chapters?: PlannerChapter[]
 }
 
 // ─── Color label constants ─────────────────────────────────
@@ -54,20 +61,26 @@ const STATUS_LABELS: Record<ChapterStatus, string> = {
   complete: 'Complete',
 }
 
-function getProjectLabels(projectType: string) {
-  if (projectType === 'sermon') return { chapter: 'Sermon', section: 'Point' }
-  return { chapter: 'Chapter', section: 'Section' }
+function getProjectLabels(projectType: string): HierarchyLabels {
+  if (projectType === 'sermon') return { part: 'Series', chapter: 'Sermon', section: 'Point' }
+  return { part: 'Part', chapter: 'Chapter', section: 'Section' }
 }
 
 export function ChapterDetailPanel({
   chapter,
   projectType,
+  hierarchyLabels,
+  parts = [],
   isOpen,
   onClose,
   onUpdate,
   onNavigateToEditor,
+  onMoveToPart,
+  onDeletePart,
+  chapters = [],
 }: ChapterDetailPanelProps) {
-  const labels = getProjectLabels(projectType)
+  const labels = hierarchyLabels ?? getProjectLabels(projectType)
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false)
 
   const [synopsis, setSynopsis] = useState(chapter?.synopsis ?? '')
   const [wordGoal, setWordGoal] = useState(String(chapter?.word_goal ?? 0))
@@ -329,6 +342,34 @@ export function ChapterDetailPanel({
                 </div>
               </div>
 
+              {/* Move to Part — chapters only */}
+              {chapter.type !== 'part' && parts.length > 0 && onMoveToPart && (
+                <div className="space-y-1.5">
+                  <Label className="text-xs text-slate-500">Assigned {labels.part}</Label>
+                  <MoveToPartSelector
+                    currentPartId={chapter.parent_id}
+                    parts={parts}
+                    partLabel={labels.part}
+                    onMove={(partId) => onMoveToPart(chapter.id, partId)}
+                  />
+                </div>
+              )}
+
+              {/* Delete Part — parts only */}
+              {chapter.type === 'part' && onDeletePart && (
+                <div className="space-y-1.5">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setDeleteModalOpen(true)}
+                    className="w-full h-8 text-xs text-red-600 hover:text-red-700 hover:bg-red-50 border border-red-200"
+                  >
+                    Delete {labels.part}
+                  </Button>
+                </div>
+              )}
+
               {/* Synopsis */}
               <div className="space-y-1.5">
                 <div className="flex items-center justify-between">
@@ -432,8 +473,8 @@ export function ChapterDetailPanel({
           </div>
         )}
 
-        {/* Footer actions — chapters only */}
-        {chapter && chapter.type !== 'part' && (
+        {/* Footer actions */}
+        {chapter && (
           <div className="shrink-0 px-5 py-4 border-t border-slate-100 bg-white">
             <Button
               type="button"
@@ -454,6 +495,26 @@ export function ChapterDetailPanel({
           </div>
         )}
       </div>
+
+      {/* Delete Part Modal */}
+      {chapter && chapter.type === 'part' && onDeletePart && (
+        <DeletePartModal
+          isOpen={deleteModalOpen}
+          partTitle={chapter.title}
+          childCount={chapters.filter((c) => c.parent_id === chapter.id).length}
+          hasPreviousPart={chapters.some(
+            (c) => c.type === 'part' && c.position < chapter.position
+          )}
+          partLabel={labels.part}
+          chapterLabel={labels.chapter}
+          onConfirm={(mode) => {
+            onDeletePart(chapter.id, mode)
+            setDeleteModalOpen(false)
+            onClose()
+          }}
+          onCancel={() => setDeleteModalOpen(false)}
+        />
+      )}
     </>
   )
 }

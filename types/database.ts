@@ -45,6 +45,7 @@ export type Project = {
   scripture_focus?: string | null
   daily_word_goal?: number
   inspiration_images?: string[]
+  hierarchy_labels?: HierarchyLabels | null
   created_at: string
   updated_at: string
 }
@@ -57,6 +58,12 @@ export type WritingSession = {
   word_count: number
   created_at: string
   updated_at: string
+}
+
+export type HierarchyLabels = {
+  part: string
+  chapter: string
+  section: string
 }
 
 export type ChapterStatus = 'not_started' | 'in_progress' | 'draft' | 'revision' | 'complete'
@@ -74,6 +81,7 @@ export type Chapter = {
   synopsis: string
   color_label: ColorLabel
   type: ChapterType
+  parent_id: string | null
   created_at: string
   updated_at: string
 }

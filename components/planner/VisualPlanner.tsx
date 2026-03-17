@@ -1,8 +1,9 @@
 'use client'
 
-import { useCallback, useEffect, useRef, useState } from 'react'
-import { ChapterStatus, ColorLabel } from '@/types/database'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { ChapterStatus, ColorLabel, HierarchyLabels } from '@/types/database'
 import { createClient } from '@/lib/supabase/client'
+import { getHierarchyLabels } from '@/lib/utils/hierarchyLabels'
 import { PlannerHeader } from './PlannerHeader'
 import { BoardView } from './BoardView'
 import { CorkBoardView } from './CorkBoardView'
@@ -14,6 +15,7 @@ interface VisualPlannerProps {
   projectId: string
   projectTitle: string
   projectType: string
+  hierarchyLabels?: HierarchyLabels | null
   onNavigateToChapter: (chapterId: string) => void
   onClose: () => void
 }
@@ -86,6 +88,7 @@ export function VisualPlanner({
   projectId,
   projectTitle,
   projectType,
+  hierarchyLabels: hierarchyLabelsProp,
   onNavigateToChapter,
   onClose,
 }: VisualPlannerProps) {
@@ -96,6 +99,18 @@ export function VisualPlanner({
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFilters, setStatusFilters] = useState<ChapterStatus[]>([])
   const [selectedChapterId, setSelectedChapterId] = useState<string | null>(null)
+
+  // Resolve hierarchy labels
+  const labels = useMemo(
+    () => getHierarchyLabels({ hierarchy_labels: hierarchyLabelsProp, type: projectType }),
+    [hierarchyLabelsProp, projectType]
+  )
+
+  // Extract parts list for MoveToPartSelector
+  const parts = useMemo(
+    () => chapters.filter((c) => c.type === 'part').map((c) => ({ id: c.id, title: c.title })),
+    [chapters]
+  )
 
   // Avoid double-fetch on strict mode
   const hasFetched = useRef(false)
@@ -348,6 +363,48 @@ export function VisualPlanner({
     [handleChapterUpdate]
   )
 
+  // ── Move chapter to part ──────────────────────────────
+  const handleMoveToPart = useCallback(
+    (chapterId: string, partId: string | null) => {
+      setChapters((prev) =>
+        prev.map((c) => (c.id === chapterId ? { ...c, parent_id: partId } : c))
+      )
+      fetch(`/api/chapters/${chapterId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ parent_id: partId }),
+      }).catch(() => {})
+    },
+    []
+  )
+
+  // ── Delete part ──────────────────────────────────────
+  const handleDeletePart = useCallback(
+    async (partId: string, mode: 'merge_previous' | 'ungrouped' | 'delete_all') => {
+      try {
+        const res = await fetch(`/api/chapters/${partId}`, {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ deleteMode: mode }),
+        })
+        if (res.ok) {
+          // Refresh planner data
+          const plannerRes = await fetch(`/api/planner/${projectId}`)
+          if (plannerRes.ok) {
+            const data = await plannerRes.json()
+            setChapters(data.chapters ?? [])
+          }
+          if (selectedChapterId === partId) {
+            setSelectedChapterId(null)
+          }
+        }
+      } catch {
+        // Non-critical
+      }
+    },
+    [projectId, selectedChapterId]
+  )
+
   // ── Navigate to editor ─────────────────────────────────
   const handleNavigateToEditor = (chapterId: string) => {
     onNavigateToChapter(chapterId)
@@ -518,10 +575,15 @@ export function VisualPlanner({
       <ChapterDetailPanel
         chapter={selectedChapter}
         projectType={projectType}
+        hierarchyLabels={labels}
+        parts={parts}
         isOpen={selectedChapterId !== null}
         onClose={() => setSelectedChapterId(null)}
         onUpdate={handleChapterUpdate}
         onNavigateToEditor={handleNavigateToEditor}
+        onMoveToPart={handleMoveToPart}
+        onDeletePart={handleDeletePart}
+        chapters={chapters}
       />
     </div>
   )

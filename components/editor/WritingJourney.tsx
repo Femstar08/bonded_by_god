@@ -194,13 +194,38 @@ export function WritingJourney({
       {/* Chapter list */}
       <div className="flex-1 overflow-y-auto px-2 py-2 space-y-0.5">
         {chapters.map((chapter) => {
-          // ── Part divider — non-clickable group header ──
+          // ── Part divider — clickable group header (editable intro content) ──
           if (chapter.type === 'part') {
+            const isPartActive = chapter.id === activeChapterId
             return (
               <div key={chapter.id} className="px-2.5 pt-3 pb-1 mt-2 first:mt-0">
-                <p className="text-[10px] text-amber-600/70 uppercase tracking-widest font-semibold">
-                  {chapter.title}
-                </p>
+                {editingChapterId === chapter.id ? (
+                  <input
+                    ref={renameInputRef}
+                    type="text"
+                    value={editTitle}
+                    onChange={(e) => setEditTitle(e.target.value)}
+                    onBlur={handleCommitRename}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') handleCommitRename()
+                      if (e.key === 'Escape') setEditingChapterId(null)
+                    }}
+                    className="w-full text-[10px] uppercase tracking-widest font-semibold bg-background border rounded px-1.5 py-0.5 focus:outline-none focus:ring-1 focus:ring-amber-400"
+                  />
+                ) : (
+                  <button
+                    onClick={() => onSelectChapter(chapter.id)}
+                    onDoubleClick={() => handleStartRename(chapter)}
+                    className={`w-full text-left text-[10px] uppercase tracking-widest font-semibold transition-colors ${
+                      isPartActive
+                        ? 'text-amber-700'
+                        : 'text-amber-600/70 hover:text-amber-700'
+                    }`}
+                    title="Click to edit intro, double-click to rename"
+                  >
+                    {chapter.title}
+                  </button>
+                )}
                 <hr className="border-border/40 mt-1" />
               </div>
             )
