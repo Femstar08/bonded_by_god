@@ -82,6 +82,49 @@ export function EditorClient({ project, initialChapters, showPrayerPrompt, initi
   const [lookupVerseRef, setLookupVerseRef] = useState<string | null>(null)
   const [plannerOpen, setPlannerOpen] = useState(false)
 
+  // Resizable panel widths (in px)
+  const [leftWidth, setLeftWidth] = useState(224)   // w-56 default
+  const [rightWidth, setRightWidth] = useState(256)  // w-64 default
+  const dragRef = useRef<{ side: 'left' | 'right'; startX: number; startWidth: number } | null>(null)
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!dragRef.current) return
+      e.preventDefault()
+      const { side, startX, startWidth } = dragRef.current
+      const delta = e.clientX - startX
+      if (side === 'left') {
+        setLeftWidth(Math.max(160, Math.min(400, startWidth + delta)))
+      } else {
+        setRightWidth(Math.max(200, Math.min(420, startWidth - delta)))
+      }
+    }
+    const handleMouseUp = () => {
+      if (dragRef.current) {
+        dragRef.current = null
+        document.body.style.cursor = ''
+        document.body.style.userSelect = ''
+      }
+    }
+    window.addEventListener('mousemove', handleMouseMove)
+    window.addEventListener('mouseup', handleMouseUp)
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove)
+      window.removeEventListener('mouseup', handleMouseUp)
+    }
+  }, [])
+
+  const startDrag = (side: 'left' | 'right', e: React.MouseEvent) => {
+    e.preventDefault()
+    dragRef.current = {
+      side,
+      startX: e.clientX,
+      startWidth: side === 'left' ? leftWidth : rightWidth,
+    }
+    document.body.style.cursor = 'col-resize'
+    document.body.style.userSelect = 'none'
+  }
+
   // Clean expired verse cache on mount
   useEffect(() => {
     cleanExpiredCache()
@@ -428,9 +471,10 @@ export function EditorClient({ project, initialChapters, showPrayerPrompt, initi
     <div className={`flex h-[calc(100vh-10rem)] ${focusMode ? 'focus-mode-active' : ''}`}>
       {/* ── Left Sidebar: Writing Journey ── */}
       <div
-        className={`shrink-0 border-r border-border/30 bg-muted/10 transition-all duration-200 overflow-hidden ${
-          focusMode ? 'w-0' : sidebarOpen ? 'w-56' : 'w-0'
+        className={`shrink-0 bg-muted/10 overflow-hidden ${
+          focusMode || !sidebarOpen ? 'w-0' : ''
         }`}
+        style={!focusMode && sidebarOpen ? { width: leftWidth } : undefined}
       >
         {sidebarOpen && (
           <WritingJourney
@@ -454,15 +498,25 @@ export function EditorClient({ project, initialChapters, showPrayerPrompt, initi
         )}
       </div>
 
+      {/* Left resize handle */}
+      {!focusMode && sidebarOpen && (
+        <div
+          className="w-1 shrink-0 cursor-col-resize hover:bg-amber-400/40 active:bg-amber-400/60 transition-colors group relative"
+          onMouseDown={(e) => startDrag('left', e)}
+        >
+          <div className="absolute inset-y-0 -left-1 -right-1" />
+        </div>
+      )}
+
       {/* ── Center: Writing Studio ── */}
       <div className={`flex-1 flex flex-col min-w-0 overflow-y-auto ${focusMode ? 'px-10 lg:px-24 xl:px-40' : ''}`}>
-        {/* Chapter info bar — subtle strip */}
+        {/* Chapter header bar — unified strip with title, tools & word count */}
         {!focusMode && (
-          <div className="flex items-center justify-between bg-[#1a2744] text-white px-5 py-1.5">
-            <div className="flex items-center gap-3 text-sm">
+          <div className="sticky top-0 z-10 flex items-center justify-between bg-background/95 backdrop-blur-sm border-b border-border/20 px-5 py-2">
+            <div className="flex items-center gap-2">
               <button
                 onClick={() => setSidebarOpen((prev) => !prev)}
-                className="p-1 rounded hover:bg-white/10 transition-colors"
+                className="p-1 rounded hover:bg-muted transition-colors text-muted-foreground"
                 aria-label={sidebarOpen ? 'Hide chapters' : 'Show chapters'}
               >
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="size-4">
@@ -471,7 +525,7 @@ export function EditorClient({ project, initialChapters, showPrayerPrompt, initi
               </button>
               <button
                 onClick={() => setPlannerOpen(true)}
-                className="p-1 rounded hover:bg-white/10 transition-colors"
+                className="p-1 rounded hover:bg-muted transition-colors text-muted-foreground"
                 aria-label="Visual Planner"
                 title="Visual Planner"
               >
@@ -479,94 +533,65 @@ export function EditorClient({ project, initialChapters, showPrayerPrompt, initi
                   <path fillRule="evenodd" d="M4.25 2A2.25 2.25 0 0 0 2 4.25v2.5A2.25 2.25 0 0 0 4.25 9h2.5A2.25 2.25 0 0 0 9 6.75v-2.5A2.25 2.25 0 0 0 6.75 2h-2.5Zm0 9A2.25 2.25 0 0 0 2 13.25v2.5A2.25 2.25 0 0 0 4.25 18h2.5A2.25 2.25 0 0 0 9 15.75v-2.5A2.25 2.25 0 0 0 6.75 11h-2.5Zm9-9A2.25 2.25 0 0 0 11 4.25v2.5A2.25 2.25 0 0 0 13.25 9h2.5A2.25 2.25 0 0 0 18 6.75v-2.5A2.25 2.25 0 0 0 15.75 2h-2.5Zm0 9A2.25 2.25 0 0 0 11 13.25v2.5A2.25 2.25 0 0 0 13.25 18h2.5A2.25 2.25 0 0 0 18 15.75v-2.5A2.25 2.25 0 0 0 15.75 11h-2.5Z" clipRule="evenodd" />
                 </svg>
               </button>
-              {/* Export Project shortcut — opens export modal pre-scoped to project */}
-              <button
-                onClick={() => setExportOpen(true)}
-                className="p-1 rounded hover:bg-white/10 transition-colors"
-                aria-label="Export project"
-                title="Export Project"
+
+              <span className="mx-1 h-4 w-px bg-border/40" aria-hidden="true" />
+
+              <h1 className="text-base font-semibold font-serif truncate max-w-[280px]">
+                {activeChapter.title}
+              </h1>
+              {activeSectionTitle && (
+                <span className="text-xs text-amber-600 truncate max-w-[180px]">
+                  / {activeSectionTitle}
+                </span>
+              )}
+            </div>
+
+            <div className="flex items-center gap-1">
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => setTeamOpen((prev) => !prev)}
+                aria-pressed={teamOpen}
+                className={`gap-1 text-xs text-muted-foreground hover:text-foreground ${
+                  teamOpen ? 'bg-amber-50 text-amber-800' : ''
+                }`}
               >
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="size-4">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="size-3.5" aria-hidden="true">
+                  <path d="M7 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6ZM14.5 9a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5ZM1.615 16.428a1.224 1.224 0 0 1-.569-1.175 6.002 6.002 0 0 1 11.908 0c.058.467-.172.92-.57 1.174A9.953 9.953 0 0 1 7 18a9.953 9.953 0 0 1-5.385-1.572ZM14.5 16h-.106c.07-.297.088-.611.048-.933a7.47 7.47 0 0 0-1.588-3.755 4.502 4.502 0 0 1 5.874 2.636.818.818 0 0 1-.36.98A7.465 7.465 0 0 1 14.5 16Z" />
+                </svg>
+                Team
+              </Button>
+
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => setRepurposeOpen(true)}
+                disabled={wordCount < 100}
+                title={wordCount < 100 ? 'Add at least 100 words before repurposing' : 'Repurpose this chapter'}
+                className="gap-1 text-xs text-muted-foreground hover:text-foreground"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="size-3.5" aria-hidden="true">
+                  <path fillRule="evenodd" d="M15.312 11.424a5.5 5.5 0 0 1-9.201 2.466l-.312-.311h2.433a.75.75 0 0 0 0-1.5H4.598a.75.75 0 0 0-.75.75v3.634a.75.75 0 0 0 1.5 0v-2.033l.312.311a7 7 0 0 0 11.712-3.138.75.75 0 0 0-1.449-.39Zm-1.624-8.848a.75.75 0 0 0-1.5 0v2.033l-.312-.312A7 7 0 0 0 .164 7.436a.75.75 0 0 0 1.45.388 5.5 5.5 0 0 1 9.2-2.467l.313.312H8.694a.75.75 0 0 0 0 1.5h3.634a.75.75 0 0 0 .75-.75V2.784Z" clipRule="evenodd" />
+                </svg>
+                Repurpose
+              </Button>
+
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => setExportOpen(true)}
+                aria-label="Export chapter"
+                className="gap-1 text-xs text-muted-foreground hover:text-foreground"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="size-3.5" aria-hidden="true">
                   <path d="M10.75 2.75a.75.75 0 0 0-1.5 0v8.614L6.295 8.235a.75.75 0 1 0-1.09 1.03l4.25 4.5a.75.75 0 0 0 1.09 0l4.25-4.5a.75.75 0 0 0-1.09-1.03l-2.955 3.129V2.75Z" />
                   <path d="M3.5 12.75a.75.75 0 0 0-1.5 0v2.5A2.75 2.75 0 0 0 4.75 18h10.5A2.75 2.75 0 0 0 18 15.25v-2.5a.75.75 0 0 0-1.5 0v2.5c0 .69-.56 1.25-1.25 1.25H4.75c-.69 0-1.25-.56-1.25-1.25v-2.5Z" />
                 </svg>
-              </button>
-              <span className="text-amber-300 font-medium">{activeChapter.title}</span>
-            </div>
-            <div className="flex items-center gap-3">
-              {memoryContext?.authorStyleProfile && (
-                <span className="text-[10px] text-amber-400/50 border border-amber-400/20 rounded px-1.5 py-0.5" title={memoryContext.authorStyleProfile.styleSummary}>
-                  Style active
-                </span>
-              )}
-              <span className="text-[11px] text-white/40">
-                {activeChapter.word_goal
-                  ? `${wordCount.toLocaleString()} / ${activeChapter.word_goal.toLocaleString()} words`
-                  : `${wordCount.toLocaleString()} words`
-                }
-              </span>
-            </div>
-          </div>
-        )}
-
-        {/* Header with actions — minimal */}
-        <div className={`${focusMode ? 'pt-2' : 'px-8 lg:px-12 pt-5'}`}>
-          <div className="flex items-center justify-between gap-2 mb-3">
-            <h1 className="text-2xl font-bold font-serif">
-              {activeChapter.title}
-            </h1>
-
-            {/* 3 action buttons only */}
-            <div className="flex items-center gap-1.5 shrink-0">
-              {!focusMode && (
-                <>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setTeamOpen((prev) => !prev)}
-                    aria-pressed={teamOpen}
-                    className={`gap-1.5 text-muted-foreground hover:text-foreground ${
-                      teamOpen ? 'bg-amber-50 text-amber-800' : ''
-                    }`}
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="size-3.5" aria-hidden="true">
-                      <path d="M7 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6ZM14.5 9a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5ZM1.615 16.428a1.224 1.224 0 0 1-.569-1.175 6.002 6.002 0 0 1 11.908 0c.058.467-.172.92-.57 1.174A9.953 9.953 0 0 1 7 18a9.953 9.953 0 0 1-5.385-1.572ZM14.5 16h-.106c.07-.297.088-.611.048-.933a7.47 7.47 0 0 0-1.588-3.755 4.502 4.502 0 0 1 5.874 2.636.818.818 0 0 1-.36.98A7.465 7.465 0 0 1 14.5 16Z" />
-                    </svg>
-                    Writing Team
-                  </Button>
-
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setRepurposeOpen(true)}
-                    disabled={wordCount < 100}
-                    title={wordCount < 100 ? 'Add at least 100 words before repurposing' : 'Repurpose this chapter'}
-                    className="gap-1.5 text-muted-foreground hover:text-foreground"
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="size-3.5" aria-hidden="true">
-                      <path fillRule="evenodd" d="M15.312 11.424a5.5 5.5 0 0 1-9.201 2.466l-.312-.311h2.433a.75.75 0 0 0 0-1.5H4.598a.75.75 0 0 0-.75.75v3.634a.75.75 0 0 0 1.5 0v-2.033l.312.311a7 7 0 0 0 11.712-3.138.75.75 0 0 0-1.449-.39Zm-1.624-8.848a.75.75 0 0 0-1.5 0v2.033l-.312-.312A7 7 0 0 0 .164 7.436a.75.75 0 0 0 1.45.388 5.5 5.5 0 0 1 9.2-2.467l.313.312H8.694a.75.75 0 0 0 0 1.5h3.634a.75.75 0 0 0 .75-.75V2.784Z" clipRule="evenodd" />
-                    </svg>
-                    Repurpose
-                  </Button>
-
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setExportOpen(true)}
-                    aria-label="Export chapter"
-                    className="gap-1.5 text-muted-foreground hover:text-foreground"
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="size-3.5" aria-hidden="true">
-                      <path d="M10.75 2.75a.75.75 0 0 0-1.5 0v8.614L6.295 8.235a.75.75 0 1 0-1.09 1.03l4.25 4.5a.75.75 0 0 0 1.09 0l4.25-4.5a.75.75 0 0 0-1.09-1.03l-2.955 3.129V2.75Z" />
-                      <path d="M3.5 12.75a.75.75 0 0 0-1.5 0v2.5A2.75 2.75 0 0 0 4.75 18h10.5A2.75 2.75 0 0 0 18 15.25v-2.5a.75.75 0 0 0-1.5 0v2.5c0 .69-.56 1.25-1.25 1.25H4.75c-.69 0-1.25-.56-1.25-1.25v-2.5Z" />
-                    </svg>
-                    Export
-                  </Button>
-                </>
-              )}
+                Export
+              </Button>
 
               <Button
                 type="button"
@@ -577,28 +602,36 @@ export function EditorClient({ project, initialChapters, showPrayerPrompt, initi
                 aria-label="Toggle Focus Mode (Ctrl+Shift+F)"
                 title="Focus Mode (Ctrl+Shift+F)"
                 className={focusMode
-                  ? 'gap-1.5 bg-primary text-primary-foreground'
-                  : 'gap-1.5 text-muted-foreground hover:text-foreground'
+                  ? 'gap-1 text-xs bg-primary text-primary-foreground'
+                  : 'gap-1 text-xs text-muted-foreground hover:text-foreground'
                 }
               >
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="size-3.5" aria-hidden="true">
                   <path d="M10 12.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5Z" />
                   <path fillRule="evenodd" d="M.664 10.59a1.651 1.651 0 0 1 0-1.186A10.004 10.004 0 0 1 10 3c4.257 0 7.893 2.66 9.336 6.41.147.381.146.804 0 1.186A10.004 10.004 0 0 1 10 17c-4.257 0-7.893-2.66-9.336-6.41ZM14 10a4 4 0 1 1-8 0 4 4 0 0 1 8 0Z" clipRule="evenodd" />
                 </svg>
-                {focusMode ? 'Exit Focus' : 'Focus'}
+                Focus
               </Button>
+
+              <span className="mx-1 h-4 w-px bg-border/40" aria-hidden="true" />
+
+              <span className="text-[11px] text-muted-foreground/60 tabular-nums whitespace-nowrap">
+                {activeChapter.word_goal
+                  ? `${wordCount.toLocaleString()} / ${activeChapter.word_goal.toLocaleString()}`
+                  : wordCount.toLocaleString()
+                } words
+              </span>
+              {memoryContext?.authorStyleProfile && (
+                <span className="text-[9px] text-amber-500/50 border border-amber-400/20 rounded px-1 py-0.5 ml-1" title={memoryContext.authorStyleProfile.styleSummary}>
+                  Style
+                </span>
+              )}
             </div>
           </div>
+        )}
 
-          {activeSectionTitle && (
-            <p className="text-sm text-amber-700 -mt-1 mb-2">
-              {activeSectionTitle}
-            </p>
-          )}
-        </div>
-
-        {/* Editor */}
-        <div className={focusMode ? '' : 'px-8 lg:px-12'}>
+        {/* Editor — full-width, no extra padding wrapper */}
+        <div className={`flex-1 ${focusMode ? '' : 'px-4 pt-4'}`}>
         <WritingEditor
           key={`${activeChapter.id}-${editorKey}`}
           chapterId={activeChapter.id}
@@ -618,8 +651,21 @@ export function EditorClient({ project, initialChapters, showPrayerPrompt, initi
         </div>
       </div>
 
+      {/* Right resize handle */}
+      {!focusMode && (
+        <div
+          className="w-1 shrink-0 cursor-col-resize hover:bg-amber-400/40 active:bg-amber-400/60 transition-colors hidden xl:block relative"
+          onMouseDown={(e) => startDrag('right', e)}
+        >
+          <div className="absolute inset-y-0 -left-1 -right-1" />
+        </div>
+      )}
+
       {/* ── Right Panel: Tabbed sidebar ── */}
-      <div className={`w-72 shrink-0 border-l border-border/30 hidden xl:flex xl:flex-col ${focusMode ? '!hidden' : ''}`}>
+      <div
+        className={`shrink-0 hidden xl:flex xl:flex-col ${focusMode ? '!hidden' : ''}`}
+        style={{ width: rightWidth }}
+      >
         {/* Tab bar */}
         <div className="flex border-b border-border/30 bg-muted/10 shrink-0">
           <button

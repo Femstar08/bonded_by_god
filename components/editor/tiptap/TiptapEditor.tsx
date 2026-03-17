@@ -77,7 +77,7 @@ export function TiptapEditor({
           'tiptap-editor prose prose-sm max-w-none',
           'focus:outline-none',
           'font-serif text-base leading-relaxed tracking-wide',
-          'min-h-[500px] px-8 py-6',
+          'min-h-[60vh] px-6 py-4',
           paragraphFocus ? 'paragraph-focus' : '',
         ].filter(Boolean).join(' '),
       },
@@ -130,7 +130,7 @@ export function TiptapEditor({
 
   return (
     <div
-      className={`rounded-md border border-border/30 bg-background overflow-hidden focus-within:ring-1 focus-within:ring-ring/30 ${
+      className={`bg-background overflow-hidden ${
         className ?? ''
       }`}
     >
