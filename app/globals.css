@@ -259,3 +259,102 @@
 .tiptap-editor.paragraph-focus > *:focus * {
   opacity: 1;
 }
+
+/* ── Section Divider ── */
+
+/*
+ * Outer wrapper rendered by NodeViewWrapper.
+ * `atom: true` means TipTap treats the node as a single unit — the wrapper
+ * must NOT be `display: contents` or the selection ring will be invisible.
+ */
+.section-divider {
+  display: block;
+  margin: 2em 0;
+  padding: 0;
+  /* Subtle amber glow when the atom node is selected in the editor */
+  border-radius: 4px;
+  outline: none;
+  cursor: default;
+  user-select: none;
+}
+
+/* Selected state — TipTap adds .ProseMirror-selectednode to the wrapper */
+.section-divider.ProseMirror-selectednode {
+  outline: 2px solid oklch(0.72 0.12 75);
+  outline-offset: 4px;
+  border-radius: 4px;
+}
+
+/*
+ * Inner flex row: line — label — line
+ */
+.section-divider-inner {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+}
+
+/* The two horizontal rule spans that flank the label */
+.section-divider-line {
+  flex: 1;
+  display: block;
+  height: 1px;
+  background: linear-gradient(
+    to right,
+    transparent,
+    oklch(0.72 0.12 75 / 0.55),
+    oklch(0.72 0.12 75 / 0.55),
+    transparent
+  );
+}
+
+/* Reverse gradient on the right-hand line */
+.section-divider-inner .section-divider-line:last-child {
+  background: linear-gradient(
+    to left,
+    transparent,
+    oklch(0.72 0.12 75 / 0.55),
+    oklch(0.72 0.12 75 / 0.55),
+    transparent
+  );
+}
+
+/* Section title text */
+.section-divider-label {
+  flex-shrink: 0;
+  font-family: var(--font-serif, 'Playfair Display', serif);
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: oklch(0.62 0.10 75);
+  white-space: nowrap;
+  padding: 0 0.25rem;
+}
+
+/*
+ * Highlight / pulse animation applied programmatically when
+ * the editor scrolls to a section (e.g. from the section map panel).
+ * Usage: add the class, then remove it after ~1.5 s.
+ */
+.section-divider-highlight {
+  animation: section-divider-pulse 1.4s ease-out forwards;
+}
+
+@keyframes section-divider-pulse {
+  0% {
+    background-color: oklch(0.72 0.12 75 / 0.22);
+    outline: 2px solid oklch(0.72 0.12 75 / 0.7);
+    outline-offset: 4px;
+    border-radius: 4px;
+  }
+  60% {
+    background-color: oklch(0.72 0.12 75 / 0.10);
+    outline-color: oklch(0.72 0.12 75 / 0.35);
+  }
+  100% {
+    background-color: transparent;
+    outline-color: transparent;
+  }
+}

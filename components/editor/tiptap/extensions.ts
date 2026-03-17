@@ -3,6 +3,7 @@ import Placeholder from '@tiptap/extension-placeholder'
 import Typography from '@tiptap/extension-typography'
 import Focus from '@tiptap/extension-focus'
 import { ScriptureBlock } from './ScriptureBlockExtension'
+import { SectionDivider } from './SectionDividerExtension'
 import { SlashCommands } from './SlashCommandExtension'
 import type { Extensions } from '@tiptap/core'
 
@@ -28,6 +29,7 @@ export function getExtensions(placeholder?: string): Extensions {
     }),
     Typography,
     ScriptureBlock,
+    SectionDivider,
     SlashCommands,
   ]
 }

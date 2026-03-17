@@ -5,6 +5,10 @@ import { Project, Chapter, ChapterMemory, Section, SectionStatus } from '@/types
 import { buildProjectContext } from '@/lib/ai/context'
 import { formatSectionMapForPrompt } from '@/lib/writingMap/writingMapEngine'
 import { countWords } from '@/lib/utils/text'
+import {
+  assembleSectionedContent,
+  countWordsPerSection,
+} from '@/lib/editor/sectionContent'
 import type { MemoryContext } from '@/lib/memory/inject'
 import { WritingEditor } from './WritingEditor'
 import { InsightPanel } from './InsightPanel'
@@ -43,9 +47,20 @@ export function EditorClient({ project, initialChapters, showPrayerPrompt, initi
   const [activeChapterId, setActiveChapterId] = useState<string>(
     initialChapters[0]?.id || ''
   )
-  const [editorContent, setEditorContent] = useState(initialChapters[0]?.content || '')
+  const [editorContent, setEditorContent] = useState(() => {
+    const firstChapter = initialChapters[0]
+    if (!firstChapter) return ''
+    const sections = initialSections[firstChapter.id] ?? []
+    return assembleSectionedContent(firstChapter.content ?? '', sections)
+  })
   const [editorKey, setEditorKey] = useState(0)
-  const [wordCount, setWordCount] = useState(() => countWords(initialChapters[0]?.content))
+  const [wordCount, setWordCount] = useState(() => {
+    const firstChapter = initialChapters[0]
+    if (!firstChapter) return 0
+    const sections = initialSections[firstChapter.id] ?? []
+    const assembled = assembleSectionedContent(firstChapter.content ?? '', sections)
+    return countWordsPerSection(assembled).total
+  })
   const [teamOpen, setTeamOpen] = useState(false)
   const [exportOpen, setExportOpen] = useState(false)
   const [repurposeOpen, setRepurposeOpen] = useState(false)
@@ -54,6 +69,13 @@ export function EditorClient({ project, initialChapters, showPrayerPrompt, initi
   const [chapterMemories, setChapterMemories] = useState<ChapterMemory[]>(initialChapterMemories)
   const [sectionsByChapter, setSectionsByChapter] = useState<Record<string, Section[]>>(initialSections)
   const [activeSectionTitle, setActiveSectionTitle] = useState<string | null>(null)
+  const [sectionWordCounts, setSectionWordCounts] = useState<Record<string, number>>(() => {
+    const firstChapter = initialChapters[0]
+    if (!firstChapter) return {}
+    const sections = initialSections[firstChapter.id] ?? []
+    const assembled = assembleSectionedContent(firstChapter.content ?? '', sections)
+    return countWordsPerSection(assembled).sections
+  })
   const [focusMode, setFocusMode] = useState(false)
   const [rightTab, setRightTab] = useState<'insights' | 'bible' | 'references'>('insights')
   const [citationStyle] = useState<CitationStyleType>('chicago')
@@ -175,8 +197,18 @@ export function EditorClient({ project, initialChapters, showPrayerPrompt, initi
     })
   }
 
+  const handleScrollToSection = (sectionId: string) => {
+    const el = document.querySelector(`[data-section-id="${sectionId}"]`)
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      el.classList.add('section-divider-highlight')
+      setTimeout(() => el.classList.remove('section-divider-highlight'), 1500)
+    }
+  }
+
   const handleSectionSelect = (section: Section) => {
     setActiveSectionTitle(section.title)
+    handleScrollToSection(section.id)
   }
 
   const handleChapterSelect = (chapterId: string) => {
@@ -192,17 +224,23 @@ export function EditorClient({ project, initialChapters, showPrayerPrompt, initi
     setActiveChapterId(chapterId)
     const ch = chapters.find((c) => c.id === chapterId)
     if (ch) {
-      setWordCount(countWords(ch.content))
-      setEditorContent(ch.content || '')
+      const sections = sectionsByChapter[chapterId] ?? []
+      const assembled = assembleSectionedContent(ch.content ?? '', sections)
+      const counts = countWordsPerSection(assembled)
+      setWordCount(counts.total)
+      setSectionWordCounts(counts.sections)
+      setEditorContent(assembled)
     }
   }
 
-  const handleContentChange = (content: string) => {
-    setWordCount(countWords(content))
-    setEditorContent(content)
+  const handleContentChange = (html: string) => {
+    const counts = countWordsPerSection(html)
+    setWordCount(counts.total)
+    setSectionWordCounts(counts.sections)
+    setEditorContent(html)
     handleStyleRefresh()
     setChapters((prev) =>
-      prev.map((c) => (c.id === activeChapterId ? { ...c, content } : c))
+      prev.map((c) => (c.id === activeChapterId ? { ...c, content: html } : c))
     )
   }
 
@@ -224,12 +262,17 @@ export function EditorClient({ project, initialChapters, showPrayerPrompt, initi
         const next = remaining[0]
         if (next) {
           setActiveChapterId(next.id)
-          setEditorContent(next.content || '')
-          setWordCount(countWords(next.content))
+          const nextSections = sectionsByChapter[next.id] ?? []
+          const assembled = assembleSectionedContent(next.content ?? '', nextSections)
+          const counts = countWordsPerSection(assembled)
+          setEditorContent(assembled)
+          setWordCount(counts.total)
+          setSectionWordCounts(counts.sections)
         } else {
           setActiveChapterId('')
           setEditorContent('')
           setWordCount(0)
+          setSectionWordCounts({})
         }
       }
       return remaining
@@ -247,6 +290,17 @@ export function EditorClient({ project, initialChapters, showPrayerPrompt, initi
       ...prev,
       [chapterId]: [...(prev[chapterId] ?? []), section],
     }))
+    // If the added section belongs to the active chapter, append its divider
+    // to the editor so the author can start writing beneath it immediately.
+    if (chapterId === activeChapterId) {
+      const escapedTitle = section.title.replace(/&/g, '&amp;').replace(/"/g, '&quot;')
+      const dividerHtml =
+        `<div data-type="section-divider" data-section-id="${section.id}" data-section-title="${escapedTitle}" class="section-divider"></div><p></p>`
+      const newContent = editorContent + dividerHtml
+      handleApplyAiResult(newContent)
+      // Scroll to the newly inserted divider after a short layout tick
+      setTimeout(() => handleScrollToSection(section.id), 150)
+    }
   }
 
   const handleSectionDeleted = (chapterId: string, sectionId: string) => {
@@ -383,6 +437,7 @@ export function EditorClient({ project, initialChapters, showPrayerPrompt, initi
             chapters={chapters}
             activeChapterId={activeChapterId}
             sectionsByChapter={sectionsByChapter}
+            sectionWordCounts={sectionWordCounts}
             projectId={project.id}
             projectTitle={project.title}
             onSelectChapter={handleChapterSelect}
@@ -555,6 +610,7 @@ export function EditorClient({ project, initialChapters, showPrayerPrompt, initi
           onAiAction={handleAiAction}
           onLookupVerse={(ref) => setLookupVerseRef(ref)}
           paragraphFocus={focusMode}
+          sections={activeSections.map((s) => ({ id: s.id, title: s.title, position: s.position }))}
         />
 
         {/* Bottom spacing */}

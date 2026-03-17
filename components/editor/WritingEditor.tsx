@@ -4,7 +4,15 @@ import { useState, useRef, useCallback, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { upsertWritingSession } from '@/lib/actions/writing-sessions'
 import { countWords } from '@/lib/utils/text'
+import { decomposeSectionedContent } from '@/lib/editor/sectionContent'
 import { TiptapEditor } from './tiptap/TiptapEditor'
+
+/** Minimal section descriptor passed in from the parent. */
+interface SectionMeta {
+  id: string
+  title: string
+  position: number
+}
 
 interface WritingEditorProps {
   chapterId: string
@@ -16,6 +24,13 @@ interface WritingEditorProps {
   onAiAction?: (action: string, selectedText: string) => void
   onLookupVerse?: (reference: string) => void
   paragraphFocus?: boolean
+  /**
+   * When provided, saving will decompose the HTML into the chapter intro
+   * and per-section fragments, persisting each fragment to its own row in
+   * `ltu_sections`.  If omitted, the save path is identical to the legacy
+   * behaviour (full HTML written to `ltu_chapters.content`).
+   */
+  sections?: SectionMeta[]
 }
 
 export function WritingEditor({
@@ -28,6 +43,7 @@ export function WritingEditor({
   onAiAction,
   onLookupVerse,
   paragraphFocus,
+  sections,
 }: WritingEditorProps) {
   const [status, setStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
   const timeoutRef = useRef<NodeJS.Timeout | null>(null)
@@ -40,32 +56,76 @@ export function WritingEditor({
       setStatus('saving')
       try {
         const supabase = createClient()
-        const { error } = await supabase
-          .from('ltu_chapters')
-          .update({ content: html })
-          .eq('id', chapterId)
-        if (error) {
-          setStatus('error')
-        } else {
-          setStatus('saved')
-          lastSavedRef.current = html
-          const wc = countWords(html.replace(/<[^>]*>/g, ''))
-          upsertWritingSession(projectId, wc)
-          if (onMemoryTrigger && wc - lastMemoryWordCount >= 150) {
-            onMemoryTrigger(chapterId, projectId)
+
+        if (sections && sections.length > 0) {
+          // --- Sectioned save path ---
+          // Split the composite HTML into the chapter intro and per-section
+          // content fragments, then persist each fragment independently.
+          const { intro, sections: decomposed } = decomposeSectionedContent(html)
+
+          // 1. Persist the chapter intro (pre-first-section content).
+          const { error: chapterError } = await supabase
+            .from('ltu_chapters')
+            .update({ content: intro })
+            .eq('id', chapterId)
+
+          if (chapterError) {
+            setStatus('error')
+            return
           }
+
+          // 2. Persist each section's content and word count in parallel.
+          //    Only update sections that were found in the decomposed output.
+          const sectionUpdates = decomposed.map(({ id, content }) => {
+            const wc = countWords(content.replace(/<[^>]*>/g, ''))
+            return supabase
+              .from('ltu_sections')
+              .update({ content, word_count: wc })
+              .eq('id', id)
+          })
+
+          const results = await Promise.all(sectionUpdates)
+          const sectionError = results.find((r) => r.error)?.error ?? null
+
+          if (sectionError) {
+            setStatus('error')
+            return
+          }
+        } else {
+          // --- Legacy (no sections) save path ---
+          // Preserve original behaviour exactly: write the full HTML to the
+          // chapter row and nothing else.
+          const { error } = await supabase
+            .from('ltu_chapters')
+            .update({ content: html })
+            .eq('id', chapterId)
+
+          if (error) {
+            setStatus('error')
+            return
+          }
+        }
+
+        // Shared post-save logic regardless of which path ran.
+        setStatus('saved')
+        lastSavedRef.current = html
+        const wc = countWords(html.replace(/<[^>]*>/g, ''))
+        upsertWritingSession(projectId, wc)
+        if (onMemoryTrigger && wc - lastMemoryWordCount >= 150) {
+          onMemoryTrigger(chapterId, projectId)
         }
       } catch {
         setStatus('error')
       }
     },
-    [chapterId, projectId, lastMemoryWordCount, onMemoryTrigger]
+    [chapterId, projectId, lastMemoryWordCount, onMemoryTrigger, sections]
   )
 
   const handleUpdate = useCallback(
-    (html: string, text: string) => {
+    (html: string, _text: string) => {
       latestHtmlRef.current = html
-      onContentChange?.(text)
+      // Pass HTML so the parent can parse section dividers for word counts
+      onContentChange?.(html)
 
       // Debounced auto-save
       if (timeoutRef.current) clearTimeout(timeoutRef.current)

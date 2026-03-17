@@ -63,6 +63,8 @@ export async function PATCH(request: NextRequest) {
   if (updates.title !== undefined) allowed.title = updates.title
   if (updates.notes !== undefined) allowed.notes = updates.notes
   if (updates.summary !== undefined) allowed.summary = updates.summary
+  if (updates.content !== undefined) allowed.content = updates.content
+  if (updates.word_count !== undefined) allowed.word_count = updates.word_count
 
   if (Object.keys(allowed).length === 0) {
     return NextResponse.json({ error: 'No valid fields to update' }, { status: 400 })

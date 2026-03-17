@@ -161,6 +161,8 @@ export type Section = {
   summary: string
   synopsis: string
   notes: string
+  content: string
+  word_count: number
   position: number
   created_at: string
   updated_at: string

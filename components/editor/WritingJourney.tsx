@@ -10,6 +10,8 @@ interface WritingJourneyProps {
   chapters: Chapter[]
   activeChapterId: string
   sectionsByChapter: Record<string, Section[]>
+  /** Per-section word counts keyed by section id, updated live as the user types. */
+  sectionWordCounts?: Record<string, number>
   projectId: string
   projectTitle: string
   onSelectChapter: (chapterId: string) => void
@@ -78,6 +80,7 @@ export function WritingJourney({
   chapters,
   activeChapterId,
   sectionsByChapter,
+  sectionWordCounts = {},
   projectId,
   projectTitle,
   onSelectChapter,
@@ -489,10 +492,15 @@ export function WritingJourney({
                               <button
                                 onClick={() => onSectionSelect?.(section)}
                                 onDoubleClick={() => handleStartSectionRename(section)}
-                                className="flex-1 min-w-0 text-left truncate text-muted-foreground hover:text-foreground transition-colors"
+                                className="flex-1 min-w-0 text-left text-muted-foreground hover:text-foreground transition-colors"
                                 title="Click to focus, double-click to rename"
                               >
-                                {section.title}
+                                <span className="block truncate">{section.title}</span>
+                                {sectionWordCounts[section.id] !== undefined && sectionWordCounts[section.id] > 0 && (
+                                  <span className="block text-[10px] text-muted-foreground/50 leading-none mt-0.5">
+                                    {sectionWordCounts[section.id].toLocaleString()} words
+                                  </span>
+                                )}
                               </button>
                             )}
 
