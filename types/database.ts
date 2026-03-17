@@ -1,5 +1,45 @@
 export type BibleTranslation = 'NIV' | 'ESV' | 'KJV' | 'NKJV' | 'NASB' | 'NLT' | 'MSG'
 
+export type CitationStyle = 'chicago' | 'apa' | 'mla'
+export type FootnoteStyle = 'footnote' | 'endnote'
+export type CitationType = 'bible' | 'book' | 'article' | 'website' | 'dictionary' | 'other'
+
+export type Citation = {
+  id: string
+  project_id: string
+  type: CitationType
+  title: string
+  // Bible
+  bible_reference: string | null
+  bible_translation: string | null
+  // Book
+  author: string | null
+  editor: string | null
+  publisher: string | null
+  year: string | null
+  edition: string | null
+  pages: string | null
+  city: string | null
+  // Article
+  journal: string | null
+  volume: string | null
+  issue: string | null
+  doi: string | null
+  // Website
+  url: string | null
+  access_date: string | null
+  site_name: string | null
+  // Dictionary
+  dictionary_name: string | null
+  entry_word: string | null
+  // Meta
+  short_label: string | null
+  notes: string | null
+  sort_order: number
+  created_at: string
+  updated_at: string
+}
+
 export type BibleComparisonLayout = 'side_by_side' | 'stacked'
 
 export type TranslationVerse = {
@@ -46,6 +86,8 @@ export type Project = {
   daily_word_goal?: number
   inspiration_images?: string[]
   hierarchy_labels?: HierarchyLabels | null
+  citation_style?: CitationStyle
+  footnote_style?: FootnoteStyle
   created_at: string
   updated_at: string
 }

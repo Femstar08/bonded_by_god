@@ -18,6 +18,9 @@ import { WritingJourney } from './WritingJourney'
 import { WritingTeamDrawer } from './WritingTeamDrawer'
 import type { WritingTeamAction } from './WritingTeamDrawer'
 import { VisualPlanner } from '@/components/planner/VisualPlanner'
+import { CitationManagerPanel } from '@/components/citations/CitationManagerPanel'
+import type { Citation } from '@/components/citations/CitationManagerPanel'
+import type { CitationStyleType } from '@/components/citations/CitationStyleSelector'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -52,7 +55,8 @@ export function EditorClient({ project, initialChapters, showPrayerPrompt, initi
   const [sectionsByChapter, setSectionsByChapter] = useState<Record<string, Section[]>>(initialSections)
   const [activeSectionTitle, setActiveSectionTitle] = useState<string | null>(null)
   const [focusMode, setFocusMode] = useState(false)
-  const [rightTab, setRightTab] = useState<'insights' | 'bible'>('insights')
+  const [rightTab, setRightTab] = useState<'insights' | 'bible' | 'references'>('insights')
+  const [citationStyle] = useState<CitationStyleType>('chicago')
   const [lookupVerseRef, setLookupVerseRef] = useState<string | null>(null)
   const [plannerOpen, setPlannerOpen] = useState(false)
 
@@ -584,6 +588,17 @@ export function EditorClient({ project, initialChapters, showPrayerPrompt, initi
           >
             Project Bible
           </button>
+          <button
+            type="button"
+            onClick={() => setRightTab('references')}
+            className={`flex-1 py-2 text-[11px] font-semibold tracking-wide transition-colors ${
+              rightTab === 'references'
+                ? 'text-amber-700 border-b-2 border-amber-500 bg-background'
+                : 'text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            References
+          </button>
         </div>
 
         {/* Tab content */}
@@ -628,6 +643,20 @@ export function EditorClient({ project, initialChapters, showPrayerPrompt, initi
             <ProjectBiblePanel
               projectId={project.id}
               totalChapterWords={totalChapterWords}
+            />
+          )}
+
+          {rightTab === 'references' && (
+            <CitationManagerPanel
+              projectId={project.id}
+              citationStyle={citationStyle}
+              onInsertCitation={(citation: Citation) => {
+                // Count existing footnote markers in the content to determine the next number
+                const existingMarkers = (editorContent.match(/class="footnote-marker"/g) ?? []).length
+                const markerNumber = existingMarkers + 1
+                const marker = `<sup class="footnote-marker" data-citation-id="${citation.id}">[${markerNumber}]</sup>`
+                handleApplyAiResult(editorContent + marker)
+              }}
             />
           )}
         </div>
