@@ -47,14 +47,14 @@ export async function renameChapter(chapterId: string, title: string) {
   return { success: true }
 }
 
-export async function addChapter(projectId: string, title: string, position: number) {
+export async function addChapter(projectId: string, title: string, position: number, type: 'chapter' | 'part' = 'chapter') {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { success: false, error: 'Not authenticated' }
 
   const { data, error } = await supabase
     .from('ltu_chapters')
-    .insert({ project_id: projectId, title, position })
+    .insert({ project_id: projectId, title, position, type })
     .select()
     .single()
 

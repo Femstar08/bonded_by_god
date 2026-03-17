@@ -190,11 +190,11 @@ export function ChapterDetailPanel({
         <div className="flex items-center justify-between px-5 py-4 bg-[#0f1a2e] text-white shrink-0">
           <div className="min-w-0">
             <p className="text-[10px] text-white/50 uppercase tracking-widest mb-0.5">
-              {labels.chapter} Details
+              {chapter?.type === 'part' ? 'Part' : labels.chapter} Details
             </p>
             <h2 className="font-serif text-base font-semibold truncate text-amber-100">
               {chapter
-                ? `${chapter.position}. ${chapter.title}`
+                ? chapter.title
                 : 'Select a chapter'}
             </h2>
           </div>
@@ -241,23 +241,25 @@ export function ChapterDetailPanel({
                   </Select>
                 </div>
 
-                <div className="w-28 space-y-1.5">
-                  <Label className="text-xs text-slate-500">Word Goal</Label>
-                  <Input
-                    type="number"
-                    value={wordGoal}
-                    min={0}
-                    onChange={(e) => setWordGoal(e.target.value)}
-                    onBlur={handleWordGoalBlur}
-                    onKeyDown={(e) => e.key === 'Enter' && handleWordGoalBlur()}
-                    className="h-8 text-xs"
-                    aria-label="Word goal for this chapter"
-                  />
-                </div>
+                {chapter.type !== 'part' && (
+                  <div className="w-28 space-y-1.5">
+                    <Label className="text-xs text-slate-500">Word Goal</Label>
+                    <Input
+                      type="number"
+                      value={wordGoal}
+                      min={0}
+                      onChange={(e) => setWordGoal(e.target.value)}
+                      onBlur={handleWordGoalBlur}
+                      onKeyDown={(e) => e.key === 'Enter' && handleWordGoalBlur()}
+                      className="h-8 text-xs"
+                      aria-label="Word goal for this chapter"
+                    />
+                  </div>
+                )}
               </div>
 
-              {/* Word count display */}
-              {chapter.word_count > 0 && (
+              {/* Word count display — chapters only */}
+              {chapter.type !== 'part' && chapter.word_count > 0 && (
                 <div className="flex items-center gap-2">
                   <div
                     className="h-1.5 rounded-full bg-slate-100 flex-1 overflow-hidden"
@@ -398,8 +400,8 @@ export function ChapterDetailPanel({
                 )}
               </div>
 
-              {/* Sections list */}
-              {chapter.sections.length > 0 && (
+              {/* Sections list — chapters only */}
+              {chapter.type !== 'part' && chapter.sections.length > 0 && (
                 <div className="space-y-2">
                   <Label className="text-xs text-slate-500">
                     {labels.section}s ({chapter.sections.length})
@@ -430,8 +432,8 @@ export function ChapterDetailPanel({
           </div>
         )}
 
-        {/* Footer actions */}
-        {chapter && (
+        {/* Footer actions — chapters only */}
+        {chapter && chapter.type !== 'part' && (
           <div className="shrink-0 px-5 py-4 border-t border-slate-100 bg-white">
             <Button
               type="button"

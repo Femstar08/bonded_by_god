@@ -10,6 +10,7 @@ interface CorkBoardViewProps {
   projectType: string
   onReorder: (fromIndex: number, toIndex: number) => void
   onAddChapter: () => void
+  onAddPart: () => void
   onChapterClick: (chapterId: string) => void
   onStatusChange: (chapterId: string, status: ChapterStatus) => void
   onColorChange: (chapterId: string, color: ColorLabel) => void
@@ -317,6 +318,7 @@ export function CorkBoardView({
   projectType,
   onReorder,
   onAddChapter,
+  onAddPart,
   onChapterClick,
   onStatusChange,
   onColorChange,
@@ -359,23 +361,61 @@ export function CorkBoardView({
   return (
     <div className="p-6 overflow-y-auto h-full">
       <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
-        {chapters.map((chapter, index) => (
-          <ChapterCard
-            key={chapter.id}
-            chapter={chapter}
-            index={index}
-            isDragOver={dragOverIndex === index}
-            onDragStart={handleDragStart}
-            onDragOver={handleDragOver}
-            onDrop={handleDrop}
-            onDragEnd={handleDragEnd}
-            onChapterClick={onChapterClick}
-            onStatusChange={onStatusChange}
-            onColorChange={onColorChange}
-            onSynopsisChange={onSynopsisChange}
-            onTitleChange={onTitleChange}
-          />
-        ))}
+        {chapters.map((chapter, index) => {
+          // ── Part divider — spans full width ──
+          if (chapter.type === 'part') {
+            return (
+              <div
+                key={chapter.id}
+                draggable
+                onDragStart={(e) => handleDragStart(e, index)}
+                onDragOver={(e) => handleDragOver(e, index)}
+                onDrop={(e) => handleDrop(e, index)}
+                onDragEnd={handleDragEnd}
+                className={`col-span-full cursor-grab active:cursor-grabbing transition-all duration-150 ${
+                  dragOverIndex === index ? 'ring-2 ring-amber-400' : ''
+                }`}
+              >
+                <button
+                  type="button"
+                  onClick={() => onChapterClick(chapter.id)}
+                  className="w-full text-left"
+                >
+                  <div className="bg-[#0f1a2e] rounded-lg px-4 py-3 flex items-center gap-3 group hover:bg-[#142035] transition-colors">
+                    <p className="text-[10px] text-amber-400/60 uppercase tracking-widest shrink-0">Part</p>
+                    <h3 className="font-serif text-sm font-semibold text-amber-100 group-hover:text-amber-50 transition-colors">
+                      {chapter.title}
+                    </h3>
+                    {chapter.synopsis && (
+                      <p className="text-[10px] text-white/40 truncate ml-2">
+                        {chapter.synopsis}
+                      </p>
+                    )}
+                  </div>
+                </button>
+              </div>
+            )
+          }
+
+          // ── Regular chapter card ──
+          return (
+            <ChapterCard
+              key={chapter.id}
+              chapter={chapter}
+              index={index}
+              isDragOver={dragOverIndex === index}
+              onDragStart={handleDragStart}
+              onDragOver={handleDragOver}
+              onDrop={handleDrop}
+              onDragEnd={handleDragEnd}
+              onChapterClick={onChapterClick}
+              onStatusChange={onStatusChange}
+              onColorChange={onColorChange}
+              onSynopsisChange={onSynopsisChange}
+              onTitleChange={onTitleChange}
+            />
+          )
+        })}
 
         {/* Add Chapter card */}
         <button
@@ -393,6 +433,24 @@ export function CorkBoardView({
             <path d="M10.75 4.75a.75.75 0 0 0-1.5 0v4.5h-4.5a.75.75 0 0 0 0 1.5h4.5v4.5a.75.75 0 0 0 1.5 0v-4.5h4.5a.75.75 0 0 0 0-1.5h-4.5v-4.5Z" />
           </svg>
           Add {labels.chapter}
+        </button>
+
+        {/* Add Part card */}
+        <button
+          type="button"
+          onClick={onAddPart}
+          className="flex flex-col items-center justify-center gap-1.5 rounded-xl border-2 border-dashed border-slate-500 text-slate-400 hover:border-amber-400 hover:text-amber-500 hover:bg-[#0f1a2e]/10 transition-all min-h-[80px] text-xs font-medium col-span-full"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 20 20"
+            fill="currentColor"
+            className="size-4"
+            aria-hidden="true"
+          >
+            <path d="M10.75 4.75a.75.75 0 0 0-1.5 0v4.5h-4.5a.75.75 0 0 0 0 1.5h4.5v4.5a.75.75 0 0 0 1.5 0v-4.5h4.5a.75.75 0 0 0 0-1.5h-4.5v-4.5Z" />
+          </svg>
+          Add Part
         </button>
       </div>
     </div>

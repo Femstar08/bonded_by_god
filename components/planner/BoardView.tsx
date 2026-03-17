@@ -20,6 +20,7 @@ interface BoardViewProps {
   projectType: string
   onReorder: (fromIndex: number, toIndex: number) => void
   onAddChapter: () => void
+  onAddPart: () => void
   onAddSection: (chapterId: string) => void
   onChapterClick: (chapterId: string) => void
   onStatusChange: (chapterId: string, status: ChapterStatus) => void
@@ -55,6 +56,7 @@ export function BoardView({
   projectType,
   onReorder,
   onAddChapter,
+  onAddPart,
   onAddSection,
   onChapterClick,
   onStatusChange,
@@ -182,6 +184,45 @@ export function BoardView({
           : '#e2e8f0'
         const isDragOverColumn = dragOverChapterIndex === index
 
+        // ── Part divider column ──
+        if (chapter.type === 'part') {
+          return (
+            <div
+              key={chapter.id}
+              draggable
+              onDragStart={(e) => handleChapterDragStart(e, chapter, index)}
+              onDragEnd={handleChapterDragEnd}
+              onDragOver={(e) => handleChapterDragOver(e, index)}
+              onDrop={(e) => handleChapterDrop(e, index)}
+              className={`flex flex-col shrink-0 w-48 rounded-xl bg-[#0f1a2e] border shadow-sm transition-all duration-150 cursor-grab active:cursor-grabbing ${
+                isDragOverColumn
+                  ? 'ring-2 ring-amber-400 border-amber-300'
+                  : 'border-slate-600 hover:border-slate-500'
+              }`}
+            >
+              <div className="px-3 py-4">
+                <button
+                  type="button"
+                  onClick={() => onChapterClick(chapter.id)}
+                  className="w-full text-left group"
+                  aria-label={`Open part details: ${chapter.title}`}
+                >
+                  <p className="text-[10px] text-amber-400/60 uppercase tracking-widest mb-1">Part</p>
+                  <h3 className="font-serif text-sm font-semibold text-amber-100 group-hover:text-amber-50 transition-colors line-clamp-2">
+                    {chapter.title}
+                  </h3>
+                </button>
+                {chapter.synopsis && (
+                  <p className="text-[10px] text-white/50 mt-2 line-clamp-4 leading-relaxed">
+                    {chapter.synopsis}
+                  </p>
+                )}
+              </div>
+            </div>
+          )
+        }
+
+        // ── Regular chapter column ──
         return (
           <div
             key={chapter.id}
@@ -207,7 +248,7 @@ export function BoardView({
               >
                 <div className="flex items-start justify-between gap-2">
                   <h3 className="font-serif text-sm font-semibold text-[#0f1a2e] leading-snug group-hover:text-amber-700 transition-colors line-clamp-2">
-                    {chapter.position}. {chapter.title}
+                    {chapter.title}
                   </h3>
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
@@ -295,12 +336,12 @@ export function BoardView({
         )
       })}
 
-      {/* Add Chapter column */}
-      <div className="shrink-0 w-64">
+      {/* Add Chapter / Part area */}
+      <div className="shrink-0 w-64 space-y-2">
         <button
           type="button"
           onClick={onAddChapter}
-          className="w-full h-24 rounded-xl border-2 border-dashed border-slate-300 text-slate-400 hover:border-amber-400 hover:text-amber-600 hover:bg-amber-50/50 transition-all flex flex-col items-center justify-center gap-1.5 text-sm font-medium"
+          className="w-full h-20 rounded-xl border-2 border-dashed border-slate-300 text-slate-400 hover:border-amber-400 hover:text-amber-600 hover:bg-amber-50/50 transition-all flex flex-col items-center justify-center gap-1 text-sm font-medium"
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -312,6 +353,22 @@ export function BoardView({
             <path d="M10.75 4.75a.75.75 0 0 0-1.5 0v4.5h-4.5a.75.75 0 0 0 0 1.5h4.5v4.5a.75.75 0 0 0 1.5 0v-4.5h4.5a.75.75 0 0 0 0-1.5h-4.5v-4.5Z" />
           </svg>
           Add {labels.chapter}
+        </button>
+        <button
+          type="button"
+          onClick={onAddPart}
+          className="w-full h-14 rounded-xl border-2 border-dashed border-slate-500 text-slate-400 hover:border-amber-400 hover:text-amber-500 hover:bg-[#0f1a2e]/10 transition-all flex items-center justify-center gap-1.5 text-xs font-medium"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 20 20"
+            fill="currentColor"
+            className="size-4"
+            aria-hidden="true"
+          >
+            <path d="M10.75 4.75a.75.75 0 0 0-1.5 0v4.5h-4.5a.75.75 0 0 0 0 1.5h4.5v4.5a.75.75 0 0 0 1.5 0v-4.5h4.5a.75.75 0 0 0 0-1.5h-4.5v-4.5Z" />
+          </svg>
+          Add Part
         </button>
       </div>
     </div>

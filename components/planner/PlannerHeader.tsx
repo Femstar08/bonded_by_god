@@ -8,6 +8,7 @@ interface PlannerChapter {
   id: string
   status: ChapterStatus
   word_count: number
+  type?: 'chapter' | 'part'
 }
 
 interface PlannerHeaderProps {
@@ -65,11 +66,13 @@ export function PlannerHeader({
   onStatusFiltersChange,
   chapters,
 }: PlannerHeaderProps) {
-  const total = chapters.length
+  // Exclude parts from stats — they're structural, not content
+  const chapterItems = chapters.filter((c) => c.type !== 'part')
+  const total = chapterItems.length
 
   const statusCounts = ALL_STATUSES.reduce<Record<ChapterStatus, number>>(
     (acc, s) => {
-      acc[s] = chapters.filter((c) => c.status === s).length
+      acc[s] = chapterItems.filter((c) => c.status === s).length
       return acc
     },
     {
@@ -83,7 +86,7 @@ export function PlannerHeader({
 
   const statusWords = ALL_STATUSES.reduce<Record<ChapterStatus, number>>(
     (acc, s) => {
-      acc[s] = chapters
+      acc[s] = chapterItems
         .filter((c) => c.status === s)
         .reduce((sum, c) => sum + (c.word_count ?? 0), 0)
       return acc

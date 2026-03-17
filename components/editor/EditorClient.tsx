@@ -606,6 +606,8 @@ export function EditorClient({ project, initialChapters, showPrayerPrompt, initi
             projectTitle={project.title}
             projectType={project.type}
             onNavigateToChapter={(chapterId) => {
+              const ch = chapters.find((c) => c.id === chapterId)
+              if (ch?.type === 'part') return // Parts have no editor content
               setPlannerOpen(false)
               handleChapterSelect(chapterId)
             }}

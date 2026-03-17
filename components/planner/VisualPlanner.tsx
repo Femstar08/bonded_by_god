@@ -64,13 +64,15 @@ function applyChapterFilters(
   let filtered = chapters
 
   if (statusFilters.length > 0) {
-    filtered = filtered.filter((c) => statusFilters.includes(c.status))
+    // Always keep parts visible as structural dividers
+    filtered = filtered.filter((c) => c.type === 'part' || statusFilters.includes(c.status))
   }
 
   const q = searchQuery.trim().toLowerCase()
   if (q) {
     filtered = filtered.filter(
       (c) =>
+        c.type === 'part' ||
         c.title.toLowerCase().includes(q) ||
         c.synopsis?.toLowerCase().includes(q)
     )
@@ -181,22 +183,28 @@ export function VisualPlanner({
     []
   )
 
-  // ── Add chapter ────────────────────────────────────────
-  const handleAddChapter = useCallback(async () => {
+  // ── Add chapter or part ───────────────────────────────
+  const handleAdd = useCallback(async (type: 'chapter' | 'part' = 'chapter') => {
     try {
       const supabase = createClient()
       const newPosition = chapters.length + 1
+      const existingParts = chapters.filter((c) => c.type === 'part').length
+      const existingChapters = chapters.filter((c) => c.type === 'chapter').length
+      const title = type === 'part'
+        ? `Part ${existingParts + 1}`
+        : `Chapter ${existingChapters + 1}`
       const { data, error } = await supabase
         .from('ltu_chapters')
         .insert({
           project_id: projectId,
-          title: `Chapter ${newPosition}`,
+          title,
           content: '',
           position: newPosition,
-          word_goal: 0,
+          word_goal: type === 'part' ? 0 : 0,
           status: 'not_started',
           synopsis: '',
           color_label: null,
+          type,
         })
         .select()
         .single()
@@ -206,7 +214,7 @@ export function VisualPlanner({
     } catch {
       // Non-critical
     }
-  }, [projectId, chapters.length])
+  }, [projectId, chapters])
 
   // ── Add section to a chapter ───────────────────────────
   const handleAddSection = useCallback(
@@ -372,6 +380,7 @@ export function VisualPlanner({
             id: c.id,
             status: c.status,
             word_count: c.word_count,
+            type: c.type,
           }))}
         />
 
@@ -480,7 +489,8 @@ export function VisualPlanner({
                 chapters={filteredChapters}
                 projectType={projectType}
                 onReorder={handleReorder}
-                onAddChapter={handleAddChapter}
+                onAddChapter={() => handleAdd('chapter')}
+                onAddPart={() => handleAdd('part')}
                 onAddSection={handleAddSection}
                 onChapterClick={(id) => setSelectedChapterId(id)}
                 onStatusChange={handleStatusChange}
@@ -491,7 +501,8 @@ export function VisualPlanner({
                 chapters={filteredChapters}
                 projectType={projectType}
                 onReorder={handleReorder}
-                onAddChapter={handleAddChapter}
+                onAddChapter={() => handleAdd('chapter')}
+                onAddPart={() => handleAdd('part')}
                 onChapterClick={(id) => setSelectedChapterId(id)}
                 onStatusChange={handleStatusChange}
                 onColorChange={handleColorChange}

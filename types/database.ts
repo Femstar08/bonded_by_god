@@ -61,6 +61,7 @@ export type WritingSession = {
 
 export type ChapterStatus = 'not_started' | 'in_progress' | 'draft' | 'revision' | 'complete'
 export type ColorLabel = 'red' | 'orange' | 'yellow' | 'green' | 'teal' | 'blue' | 'purple' | null
+export type ChapterType = 'chapter' | 'part'
 
 export type Chapter = {
   id: string
@@ -72,6 +73,7 @@ export type Chapter = {
   status: ChapterStatus
   synopsis: string
   color_label: ColorLabel
+  type: ChapterType
   created_at: string
   updated_at: string
 }

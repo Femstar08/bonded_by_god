@@ -115,7 +115,8 @@ export function WritingJourney({
     await renameChapter(editingChapterId, trimmed)
   }
 
-  const completedChapters = chapters.filter((ch) => {
+  const chapterItems = chapters.filter((ch) => ch.type !== 'part')
+  const completedChapters = chapterItems.filter((ch) => {
     const sections = sectionsByChapter[ch.id] ?? []
     return getChapterStatus(ch, sections) === 'complete'
   }).length
@@ -123,11 +124,24 @@ export function WritingJourney({
   const handleAddChapter = async () => {
     setAdding(true)
     const nextPosition = chapters.length + 1
-    const result = await addChapter(projectId, `Chapter ${nextPosition}`, nextPosition)
+    const chapterCount = chapters.filter((c) => c.type !== 'part').length
+    const result = await addChapter(projectId, `Chapter ${chapterCount + 1}`, nextPosition)
     if (result.success && result.chapter) {
       onChapterAdded(result.chapter as Chapter)
     }
     setAdding(false)
+  }
+
+  const [addingPart, setAddingPart] = useState(false)
+  const handleAddPart = async () => {
+    setAddingPart(true)
+    const nextPosition = chapters.length + 1
+    const partCount = chapters.filter((c) => c.type === 'part').length
+    const result = await addChapter(projectId, `Part ${partCount + 1}`, nextPosition, 'part')
+    if (result.success && result.chapter) {
+      onChapterAdded(result.chapter as Chapter)
+    }
+    setAddingPart(false)
   }
 
   const handleGenerateSections = async (chapterId: string) => {
@@ -173,13 +187,25 @@ export function WritingJourney({
           {projectTitle}
         </h2>
         <p className="text-xs text-muted-foreground mt-0.5">
-          {completedChapters}/{chapters.length} chapters complete
+          {completedChapters}/{chapterItems.length} chapters complete
         </p>
       </div>
 
       {/* Chapter list */}
       <div className="flex-1 overflow-y-auto px-2 py-2 space-y-0.5">
         {chapters.map((chapter) => {
+          // ── Part divider — non-clickable group header ──
+          if (chapter.type === 'part') {
+            return (
+              <div key={chapter.id} className="px-2.5 pt-3 pb-1 mt-2 first:mt-0">
+                <p className="text-[10px] text-amber-600/70 uppercase tracking-widest font-semibold">
+                  {chapter.title}
+                </p>
+                <hr className="border-border/40 mt-1" />
+              </div>
+            )
+          }
+
           const sections = sectionsByChapter[chapter.id] ?? []
           const status = getChapterStatus(chapter, sections)
           const isActive = chapter.id === activeChapterId
@@ -220,7 +246,7 @@ export function WritingJourney({
                     {STATUS_ICON[status]}
                   </span>
                   <span className="truncate flex-1">
-                    {chapter.position}. {chapter.title}
+                    {chapter.title}
                   </span>
                 </button>
               )}
@@ -273,8 +299,8 @@ export function WritingJourney({
         })}
       </div>
 
-      {/* Add chapter */}
-      <div className="px-2 py-2 border-t">
+      {/* Add chapter / part */}
+      <div className="px-2 py-2 border-t space-y-1">
         <Button
           variant="ghost"
           size="sm"
@@ -283,6 +309,15 @@ export function WritingJourney({
           disabled={adding}
         >
           {adding ? 'Adding...' : '+ Add Chapter'}
+        </Button>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="w-full text-muted-foreground text-xs h-7"
+          onClick={handleAddPart}
+          disabled={addingPart}
+        >
+          {addingPart ? 'Adding...' : '+ Add Part'}
         </Button>
       </div>
     </div>
