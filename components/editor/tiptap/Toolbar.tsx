@@ -2,16 +2,16 @@
 
 import { useState } from 'react'
 import type { Editor } from '@tiptap/react'
+import { FONT_OPTIONS, type EditorFont } from './fonts'
 
 interface ToolbarProps {
   editor: Editor
   onLookupVerse?: (reference: string) => void
-  /** Called when the user clicks the microphone button to toggle dictation. */
   onToggleDictation?: () => void
-  /** Whether voice dictation is currently active. Controls button appearance. */
   isDictating?: boolean
-  /** Whether the browser supports the Web Speech API. Hides the button when false. */
   isDictationSupported?: boolean
+  editorFont?: EditorFont
+  onFontChange?: (font: EditorFont) => void
 }
 
 function ToolbarButton({
@@ -51,6 +51,8 @@ export function Toolbar({
   onToggleDictation,
   isDictating = false,
   isDictationSupported = false,
+  editorFont,
+  onFontChange,
 }: ToolbarProps) {
   const [lookupOpen, setLookupOpen] = useState(false)
   const [lookupRef, setLookupRef] = useState('')
@@ -169,6 +171,26 @@ export function Toolbar({
             </div>
           )}
         </div>
+      )}
+
+      {/* Font selector */}
+      {editorFont && onFontChange && (
+        <>
+          <Divider />
+          <select
+            value={editorFont}
+            onChange={(e) => onFontChange(e.target.value as EditorFont)}
+            className="text-[11px] bg-transparent border border-border/40 rounded px-1.5 py-1 text-muted-foreground hover:text-foreground focus:outline-none focus:ring-1 focus:ring-amber-400 cursor-pointer"
+            aria-label="Editor font"
+            title="Change editor font"
+          >
+            {FONT_OPTIONS.map((f) => (
+              <option key={f.value} value={f.value}>
+                {f.label}
+              </option>
+            ))}
+          </select>
+        </>
       )}
 
       <Divider />

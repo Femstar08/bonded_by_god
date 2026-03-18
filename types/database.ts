@@ -88,6 +88,7 @@ export type Project = {
   hierarchy_labels?: HierarchyLabels | null
   citation_style?: CitationStyle
   footnote_style?: FootnoteStyle
+  editor_font?: string
   created_at: string
   updated_at: string
 }

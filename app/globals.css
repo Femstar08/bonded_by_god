@@ -138,6 +138,28 @@
   }
 }
 
+/* ── Editor Font Classes ── */
+
+.editor-font-dm-serif {
+  font-family: var(--font-serif, 'DM Serif Display', serif);
+}
+
+.editor-font-lora {
+  font-family: var(--font-lora, 'Lora', serif);
+}
+
+.editor-font-merriweather {
+  font-family: var(--font-merriweather, 'Merriweather', serif);
+}
+
+.editor-font-eb-garamond {
+  font-family: var(--font-eb-garamond, 'EB Garamond', serif);
+}
+
+.editor-font-geist {
+  font-family: var(--font-geist-sans, 'Geist', sans-serif);
+}
+
 /* ── Tiptap Editor Styles ── */
 
 .tiptap-editor {

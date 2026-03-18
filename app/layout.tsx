@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono, DM_Serif_Display } from "next/font/google";
+import { Geist, Geist_Mono, DM_Serif_Display, Lora, Merriweather, EB_Garamond } from "next/font/google";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -21,6 +21,25 @@ const dmSerifDisplay = DM_Serif_Display({
   display: "swap",
 });
 
+const lora = Lora({
+  variable: "--font-lora",
+  subsets: ["latin"],
+  display: "swap",
+});
+
+const merriweather = Merriweather({
+  weight: ["300", "400", "700"],
+  variable: "--font-merriweather",
+  subsets: ["latin"],
+  display: "swap",
+});
+
+const ebGaramond = EB_Garamond({
+  variable: "--font-eb-garamond",
+  subsets: ["latin"],
+  display: "swap",
+});
+
 export const metadata: Metadata = {
   title: "Scriptloom - Write with clarity and insight",
   description: "Spirit-Led Writing & Speaking Assistant for Christian content creators",
@@ -34,7 +53,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} ${dmSerifDisplay.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} ${dmSerifDisplay.variable} ${lora.variable} ${merriweather.variable} ${ebGaramond.variable} antialiased`}
         suppressHydrationWarning
       >
         {children}

@@ -391,6 +391,23 @@ export function CorkBoardView({
 }: CorkBoardViewProps) {
   const labels = hierarchyLabels
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null)
+  const [editingPartId, setEditingPartId] = useState<string | null>(null)
+  const [editPartTitle, setEditPartTitle] = useState('')
+  const partInputRef = useRef<HTMLInputElement>(null)
+
+  const startPartEditing = (id: string, title: string) => {
+    setEditingPartId(id)
+    setEditPartTitle(title)
+    setTimeout(() => partInputRef.current?.select(), 0)
+  }
+
+  const commitPartEdit = (id: string, originalTitle: string) => {
+    const trimmed = editPartTitle.trim()
+    if (trimmed && trimmed !== originalTitle) {
+      onTitleChange(id, trimmed)
+    }
+    setEditingPartId(null)
+  }
   const dragFromIndex = useRef<number | null>(null)
 
   const handleDragStart = (e: React.DragEvent<HTMLDivElement>, index: number) => {
@@ -442,20 +459,37 @@ export function CorkBoardView({
               >
                 <div className="group/part bg-[#0f1a2e] rounded-lg px-4 py-3 flex items-center gap-3 hover:bg-[#142035] transition-colors">
                   <p className="text-[10px] text-amber-400/60 uppercase tracking-widest shrink-0">{labels.part}</p>
-                  <button
-                    type="button"
-                    onClick={() => onChapterClick(chapter.id)}
-                    className="flex-1 min-w-0 text-left flex items-center gap-3"
-                  >
-                    <h3 className="font-serif text-sm font-semibold text-amber-100 hover:text-amber-50 transition-colors">
-                      {chapter.title}
-                    </h3>
-                    {chapter.synopsis && (
+                  <div className="flex-1 min-w-0 flex items-center gap-3">
+                    {editingPartId === chapter.id ? (
+                      <input
+                        ref={partInputRef}
+                        type="text"
+                        value={editPartTitle}
+                        onChange={(e) => setEditPartTitle(e.target.value)}
+                        onBlur={() => commitPartEdit(chapter.id, chapter.title)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') commitPartEdit(chapter.id, chapter.title)
+                          if (e.key === 'Escape') setEditingPartId(null)
+                        }}
+                        className="flex-1 text-sm font-semibold font-serif bg-amber-900/40 border border-amber-400/50 rounded px-2 py-0.5 text-amber-100 focus:outline-none focus:ring-1 focus:ring-amber-400"
+                        maxLength={120}
+                        autoFocus
+                      />
+                    ) : (
+                      <h3
+                        className="font-serif text-sm font-semibold text-amber-100 hover:text-amber-50 transition-colors cursor-text"
+                        onDoubleClick={() => startPartEditing(chapter.id, chapter.title)}
+                        title="Double-click to rename"
+                      >
+                        {chapter.title}
+                      </h3>
+                    )}
+                    {chapter.synopsis && !editingPartId && (
                       <p className="text-[10px] text-white/40 truncate ml-2">
                         {chapter.synopsis}
                       </p>
                     )}
-                  </button>
+                  </div>
                   {onDeleteChapter && (
                     <button
                       type="button"

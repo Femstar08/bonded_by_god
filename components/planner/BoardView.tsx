@@ -29,6 +29,7 @@ interface BoardViewProps {
   onStatusChange: (chapterId: string, status: ChapterStatus) => void
   onSectionMove: (sectionId: string, fromChapterId: string, toChapterId: string, toPosition: number) => void
   onMoveToPart: (chapterId: string, partId: string | null) => void
+  onTitleChange: (chapterId: string, title: string) => void
   onDeleteChapter?: (chapterId: string) => void
 }
 
@@ -64,9 +65,33 @@ export function BoardView({
   onStatusChange,
   onSectionMove,
   onMoveToPart,
+  onTitleChange,
   onDeleteChapter,
 }: BoardViewProps) {
   const labels = hierarchyLabels
+
+  // Inline title editing state
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [editTitle, setEditTitle] = useState('')
+  const editInputRef = useRef<HTMLInputElement>(null)
+
+  const startEditing = (id: string, title: string) => {
+    setEditingId(id)
+    setEditTitle(title)
+    setTimeout(() => editInputRef.current?.select(), 0)
+  }
+
+  const commitEdit = (id: string, originalTitle: string) => {
+    const trimmed = editTitle.trim()
+    if (trimmed && trimmed !== originalTitle) {
+      onTitleChange(id, trimmed)
+    }
+    setEditingId(null)
+  }
+
+  const cancelEdit = () => {
+    setEditingId(null)
+  }
 
   // Track which element is being dragged over for visual feedback
   const [dragOverChapterIndex, setDragOverChapterIndex] = useState<number | null>(null)
@@ -206,17 +231,33 @@ export function BoardView({
             >
               <div className="px-3 py-4 group/part">
                 <div className="flex items-start justify-between gap-1">
-                  <button
-                    type="button"
-                    onClick={() => onChapterClick(chapter.id)}
-                    className="flex-1 text-left group min-w-0"
-                    aria-label={`Open part details: ${chapter.title}`}
-                  >
+                  <div className="flex-1 min-w-0">
                     <p className="text-[10px] text-amber-400/60 uppercase tracking-widest mb-1">{labels.part}</p>
-                    <h3 className="font-serif text-sm font-semibold text-amber-100 group-hover:text-amber-50 transition-colors line-clamp-2">
-                      {chapter.title}
-                    </h3>
-                  </button>
+                    {editingId === chapter.id ? (
+                      <input
+                        ref={editInputRef}
+                        type="text"
+                        value={editTitle}
+                        onChange={(e) => setEditTitle(e.target.value)}
+                        onBlur={() => commitEdit(chapter.id, chapter.title)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') commitEdit(chapter.id, chapter.title)
+                          if (e.key === 'Escape') cancelEdit()
+                        }}
+                        className="w-full text-sm font-semibold font-serif bg-amber-900/40 border border-amber-400/50 rounded px-2 py-0.5 text-amber-100 focus:outline-none focus:ring-1 focus:ring-amber-400"
+                        maxLength={120}
+                        autoFocus
+                      />
+                    ) : (
+                      <h3
+                        className="font-serif text-sm font-semibold text-amber-100 hover:text-amber-50 transition-colors line-clamp-2 cursor-text"
+                        onDoubleClick={() => startEditing(chapter.id, chapter.title)}
+                        title="Double-click to rename"
+                      >
+                        {chapter.title}
+                      </h3>
+                    )}
+                  </div>
                   {onDeleteChapter && (
                     <button
                       type="button"
@@ -275,27 +316,50 @@ export function BoardView({
             {/* Column header */}
             <div className="px-3 pt-3 pb-2 border-b border-slate-100 group/header">
               <div className="flex items-start gap-1">
-                <button
-                  type="button"
-                  onClick={() => onChapterClick(chapter.id)}
-                  className="flex-1 min-w-0 text-left group"
-                  aria-label={`Open ${labels.chapter.toLowerCase()} details: ${chapter.title}`}
-                >
-                  <div className="flex items-start justify-between gap-2">
-                    <h3 className="font-serif text-sm font-semibold text-[#0f1a2e] leading-snug group-hover:text-amber-700 transition-colors line-clamp-2">
-                      {chapter.title}
-                    </h3>
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      viewBox="0 0 20 20"
-                      fill="currentColor"
-                      className="size-3.5 shrink-0 mt-0.5 text-slate-400 group-hover:text-amber-500 transition-colors"
-                      aria-hidden="true"
-                    >
-                      <path d="M13.586 3.586a2 2 0 1 1 2.828 2.828l-.793.793-2.828-2.828.793-.793ZM11.379 5.793 3 14.172V17h2.828l8.38-8.379-2.83-2.828Z" />
-                    </svg>
-                  </div>
-                </button>
+                <div className="flex-1 min-w-0">
+                  {editingId === chapter.id ? (
+                    <input
+                      ref={editInputRef}
+                      type="text"
+                      value={editTitle}
+                      onChange={(e) => setEditTitle(e.target.value)}
+                      onBlur={() => commitEdit(chapter.id, chapter.title)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') commitEdit(chapter.id, chapter.title)
+                        if (e.key === 'Escape') cancelEdit()
+                      }}
+                      className="w-full text-sm font-semibold font-serif bg-amber-50 border border-amber-300 rounded px-2 py-0.5 focus:outline-none focus:ring-1 focus:ring-amber-400"
+                      maxLength={120}
+                      autoFocus
+                    />
+                  ) : (
+                    <div className="flex items-start justify-between gap-2 group">
+                      <h3
+                        className="font-serif text-sm font-semibold text-[#0f1a2e] leading-snug group-hover:text-amber-700 transition-colors line-clamp-2 cursor-text"
+                        onDoubleClick={() => startEditing(chapter.id, chapter.title)}
+                        title="Double-click to rename"
+                      >
+                        {chapter.title}
+                      </h3>
+                      <button
+                        type="button"
+                        onClick={() => onChapterClick(chapter.id)}
+                        className="shrink-0 mt-0.5"
+                        aria-label={`Open ${labels.chapter.toLowerCase()} details: ${chapter.title}`}
+                      >
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          viewBox="0 0 20 20"
+                          fill="currentColor"
+                          className="size-3.5 text-slate-400 hover:text-amber-500 transition-colors"
+                          aria-hidden="true"
+                        >
+                          <path d="M13.586 3.586a2 2 0 1 1 2.828 2.828l-.793.793-2.828-2.828.793-.793ZM11.379 5.793 3 14.172V17h2.828l8.38-8.379-2.83-2.828Z" />
+                        </svg>
+                      </button>
+                    </div>
+                  )}
+                </div>
                 {onDeleteChapter && (
                   <button
                     type="button"

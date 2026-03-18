@@ -6,6 +6,7 @@ import { upsertWritingSession } from '@/lib/actions/writing-sessions'
 import { countWords } from '@/lib/utils/text'
 import { decomposeSectionedContent } from '@/lib/editor/sectionContent'
 import { TiptapEditor, TiptapEditorRef } from './tiptap/TiptapEditor'
+import type { EditorFont } from './tiptap/fonts'
 import { forwardRef } from 'react'
 
 /** Minimal section descriptor passed in from the parent. */
@@ -32,6 +33,8 @@ interface WritingEditorProps {
    * behaviour (full HTML written to `ltu_chapters.content`).
    */
   sections?: SectionMeta[]
+  editorFont?: EditorFont
+  onFontChange?: (font: EditorFont) => void
 }
 
 export const WritingEditor = forwardRef<TiptapEditorRef, WritingEditorProps>(function WritingEditor({
@@ -45,6 +48,8 @@ export const WritingEditor = forwardRef<TiptapEditorRef, WritingEditorProps>(fun
   onLookupVerse,
   paragraphFocus,
   sections,
+  editorFont,
+  onFontChange,
 }, ref) {
   const [status, setStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
   const timeoutRef = useRef<NodeJS.Timeout | null>(null)
@@ -153,6 +158,8 @@ export const WritingEditor = forwardRef<TiptapEditorRef, WritingEditorProps>(fun
         onLookupVerse={onLookupVerse}
         paragraphFocus={paragraphFocus}
         sections={sections}
+        editorFont={editorFont}
+        onFontChange={onFontChange}
       />
       {/* Auto-save status — subtle indicator below editor */}
       <div className="flex justify-end pt-1.5 pr-1">

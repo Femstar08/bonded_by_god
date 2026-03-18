@@ -6,6 +6,7 @@ import { getExtensions } from './extensions'
 import { Toolbar } from './Toolbar'
 import { FloatingToolbar } from './FloatingToolbar'
 import { useVoiceDictation } from '@/lib/hooks/useVoiceDictation'
+import { getFontClass, type EditorFont } from './fonts'
 
 interface TiptapEditorProps {
   initialContent: string
@@ -17,11 +18,14 @@ interface TiptapEditorProps {
   onLookupVerse?: (reference: string) => void
   paragraphFocus?: boolean
   sections?: { id: string; title: string; position: number }[]
+  editorFont?: EditorFont
+  onFontChange?: (font: EditorFont) => void
 }
 
 export interface TiptapEditorRef {
   insertSection: (id: string, title: string) => void
   updateSectionId: (oldId: string, newId: string) => void
+  updateSectionTitle: (sectionId: string, newTitle: string) => void
 }
 
 /**
@@ -53,6 +57,8 @@ export const TiptapEditor = forwardRef<TiptapEditorRef, TiptapEditorProps>(funct
   onLookupVerse,
   paragraphFocus = false,
   sections,
+  editorFont,
+  onFontChange,
 }, ref) {
   const onUpdateRef = useRef(onUpdate)
   onUpdateRef.current = onUpdate
@@ -117,6 +123,17 @@ export const TiptapEditor = forwardRef<TiptapEditorRef, TiptapEditorProps>(funct
     }
   }, [editor, paragraphFocus])
 
+  // Sync editor font class
+  useEffect(() => {
+    if (!editor || !editorFont) return
+    const el = editor.view.dom
+    // Remove all editor-font-* classes
+    el.classList.forEach((cls) => {
+      if (cls.startsWith('editor-font-')) el.classList.remove(cls)
+    })
+    el.classList.add(getFontClass(editorFont))
+  }, [editor, editorFont])
+
   // Sync section titles smoothly without remounting natively inside Prosemirror
   useEffect(() => {
     if (!editor || !sections || sections.length === 0) return
@@ -179,7 +196,20 @@ export const TiptapEditor = forwardRef<TiptapEditorRef, TiptapEditorProps>(funct
         }
       })
       if (tr.docChanged) editor.view.dispatch(tr)
-    }
+    },
+    updateSectionTitle: (sectionId: string, newTitle: string) => {
+      if (!editor) return
+      const { tr } = editor.state
+      editor.state.doc.descendants((node, pos) => {
+        if (node.type.name === 'sectionDivider' && node.attrs.sectionId === sectionId) {
+          tr.setNodeMarkup(pos, undefined, {
+            ...node.attrs,
+            sectionTitle: newTitle,
+          })
+        }
+      })
+      if (tr.docChanged) editor.view.dispatch(tr)
+    },
   }))
 
   // Keyboard shortcut: Ctrl+Shift+M / Cmd+Shift+M → toggle dictation
@@ -212,6 +242,8 @@ export const TiptapEditor = forwardRef<TiptapEditorRef, TiptapEditorProps>(funct
         onToggleDictation={toggleDictation}
         isDictating={isDictating}
         isDictationSupported={isDictationSupported}
+        editorFont={editorFont}
+        onFontChange={onFontChange}
       />
 
       {/* Listening status bar — visible only while dictation is active */}

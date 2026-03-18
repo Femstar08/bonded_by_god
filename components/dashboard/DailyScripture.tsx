@@ -54,7 +54,7 @@ export function DailyScripture({ showDailyScripture }: DailyScriptureProps) {
 
   if (loading) {
     return (
-      <div className="w-full rounded-2xl bg-gradient-to-br from-amber-50/80 via-amber-50/40 to-transparent border border-amber-200/30 p-8 animate-pulse">
+      <div className="w-full rounded-2xl bg-gradient-to-br from-amber-50 via-amber-50/70 to-amber-50/30 border border-amber-200/30 p-8 animate-pulse">
         <div className="flex items-center gap-2 mb-5">
           <div className="h-3 bg-amber-100/30 rounded w-4" />
           <div className="h-3 bg-amber-100/30 rounded w-24" />
@@ -70,7 +70,7 @@ export function DailyScripture({ showDailyScripture }: DailyScriptureProps) {
   if (!scripture) return null
 
   return (
-    <div className="w-full rounded-2xl bg-gradient-to-br from-amber-50/80 via-amber-50/40 to-transparent border border-amber-200/30 p-8">
+    <div className="w-full rounded-2xl bg-gradient-to-br from-amber-50 via-amber-50/70 to-amber-50/30 border border-amber-200/30 p-8">
       {/* Decorative header: icon + label */}
       <div className="flex items-center gap-2 mb-5">
         <svg
@@ -96,7 +96,7 @@ export function DailyScripture({ showDailyScripture }: DailyScriptureProps) {
       </div>
 
       {/* Scripture body */}
-      <p className="font-serif text-xl text-slate-900 leading-relaxed font-normal">
+      <p className="font-serif text-xl text-[#1a1a1a] leading-relaxed font-normal">
         {scripture.text}
       </p>
 

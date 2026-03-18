@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { Project, Chapter, ChapterMemory, Section, SectionStatus } from '@/types/database'
+import { createClient } from '@/lib/supabase/client'
 import { buildProjectContext } from '@/lib/ai/context'
 import { formatSectionMapForPrompt } from '@/lib/writingMap/writingMapEngine'
 import { countWords } from '@/lib/utils/text'
@@ -27,6 +28,7 @@ import type { Citation } from '@/components/citations/CitationManagerPanel'
 import type { CitationStyleType } from '@/components/citations/CitationStyleSelector'
 import { Button } from '@/components/ui/button'
 import type { TiptapEditorRef } from './tiptap/TiptapEditor'
+import type { EditorFont } from './tiptap/fonts'
 import {
   Dialog,
   DialogContent,
@@ -82,6 +84,9 @@ export function EditorClient({ project, initialChapters, showPrayerPrompt, initi
   const [citationStyle] = useState<CitationStyleType>('chicago')
   const [lookupVerseRef, setLookupVerseRef] = useState<string | null>(null)
   const [plannerOpen, setPlannerOpen] = useState(false)
+  const [editorFont, setEditorFont] = useState<EditorFont>(
+    (project.editor_font as EditorFont) || 'dm-serif'
+  )
   const tiptapRef = useRef<TiptapEditorRef>(null)
 
   // Resizable panel widths (in px)
@@ -206,6 +211,16 @@ export function EditorClient({ project, initialChapters, showPrayerPrompt, initi
       })
     }
   }, [editorContent, project.id, fetchMemoryContext])
+
+  const handleFontChange = useCallback((font: EditorFont) => {
+    setEditorFont(font)
+    const supabase = createClient()
+    supabase
+      .from('ltu_projects')
+      .update({ editor_font: font })
+      .eq('id', project.id)
+      .then(() => {})
+  }, [project.id])
 
   const activeSections = sectionsByChapter[activeChapterId] ?? []
 
@@ -392,8 +407,6 @@ export function EditorClient({ project, initialChapters, showPrayerPrompt, initi
     })
 
     // Update the section divider HTML to reflect the new title without destroying the whole document
-    // We update the local HTML representation so it gets saved to the backend with the new title.
-    // TiptapEditor's useEffect handles the live DOM update without remounting!
     const escapedTitle = newTitle.replace(/&/g, '&amp;').replace(/"/g, '&quot;')
     setEditorContent((prev) => {
       const regex = new RegExp(`(<div[^>]+data-section-id="${sectionId}"[^>]*data-section-title=")[^"]*("[^>]*>)`, 'g')
@@ -405,6 +418,9 @@ export function EditorClient({ project, initialChapters, showPrayerPrompt, initi
       }
       return newContent
     })
+
+    // Imperatively update the TipTap divider node to ensure sync
+    tiptapRef.current?.updateSectionTitle(sectionId, newTitle)
   }
 
   const handleApplyAiResult = (result: string) => {
@@ -689,6 +705,8 @@ export function EditorClient({ project, initialChapters, showPrayerPrompt, initi
               onLookupVerse={(ref) => setLookupVerseRef(ref)}
               paragraphFocus={focusMode}
               sections={activeSections.map((s) => ({ id: s.id, title: s.title, position: s.position }))}
+              editorFont={editorFont}
+              onFontChange={handleFontChange}
             />
           </div>
 

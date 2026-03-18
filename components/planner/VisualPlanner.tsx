@@ -622,6 +622,7 @@ export function VisualPlanner({
                 onStatusChange={handleStatusChange}
                 onSectionMove={handleSectionMove}
                 onMoveToPart={handleMoveToPart}
+                onTitleChange={handleTitleChange}
                 onDeleteChapter={handleDeleteChapter}
               />
             ) : (
