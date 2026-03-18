@@ -176,7 +176,7 @@ export default async function DashboardPage() {
                 <Link
                   key={project.id}
                   href={`/editor/${project.id}`}
-                  className="group relative rounded-2xl border border-border/50 bg-white p-6 hover:shadow-xl hover:shadow-black/[0.04] hover:border-border/80 hover:-translate-y-0.5 transition-all duration-250 cursor-pointer"
+                  className="group relative rounded-2xl border border-amber-500/15 bg-white p-6 shadow-sm hover:shadow-[0_8px_30px_rgb(0,0,0,0.06)] hover:border-amber-500/30 hover:-translate-y-0.5 transition-all duration-250 cursor-pointer"
                 >
                   <div className="flex items-start justify-between gap-2 mb-4">
                     {project.type && (
@@ -216,7 +216,7 @@ export default async function DashboardPage() {
             {/* New Project card */}
             <Link
               href="/projects/new"
-              className="group rounded-2xl border-2 border-dashed border-border/40 p-6 flex flex-col items-center justify-center text-sm text-muted-foreground/40 hover:text-muted-foreground/70 hover:border-border/60 hover:bg-white/60 transition-all duration-200 cursor-pointer min-h-[140px]"
+              className="group rounded-2xl border border-amber-500/10 bg-[#FDFCF7] p-6 flex flex-col items-center justify-center text-sm text-muted-foreground/60 hover:text-foreground hover:border-amber-500/30 hover:shadow-md transition-all duration-200 cursor-pointer min-h-[140px]"
             >
               <span className="flex items-center justify-center w-10 h-10 rounded-full border-2 border-dashed border-current mb-3 group-hover:scale-110 transition-transform duration-200">
                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 5v14"/><path d="M5 12h14"/></svg>

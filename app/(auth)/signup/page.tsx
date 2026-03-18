@@ -75,7 +75,7 @@ export default function SignupPage() {
 
   if (emailSent) {
     return (
-      <div className="p-10 bg-white rounded-2xl shadow-sm text-center">
+      <div className="p-10 bg-[#FDFCF7] rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-amber-500/10 text-center">
         {/* Email icon */}
         <div className="mx-auto mb-6 w-16 h-16 rounded-full flex items-center justify-center" style={{ background: '#f5f0e8' }}>
           <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#c9a84c" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
@@ -140,7 +140,7 @@ export default function SignupPage() {
   }
 
   return (
-    <div className="p-10 bg-white rounded-2xl shadow-sm">
+    <div className="p-10 bg-[#FDFCF7] rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-amber-500/10">
       {/* Page heading */}
       <h2 className="font-serif text-3xl font-normal text-foreground mb-2">
         Create your account

@@ -6,7 +6,7 @@ import { buildProjectContext } from '@/lib/ai/context'
 import { formatSectionMapForPrompt } from '@/lib/writingMap/writingMapEngine'
 import { countWords } from '@/lib/utils/text'
 import {
-  assembleSectionedContent,
+  assembleSectionedContent, decomposeSectionedContent,
   countWordsPerSection,
 } from '@/lib/editor/sectionContent'
 import type { MemoryContext } from '@/lib/memory/inject'
@@ -26,6 +26,7 @@ import { CitationManagerPanel } from '@/components/citations/CitationManagerPane
 import type { Citation } from '@/components/citations/CitationManagerPanel'
 import type { CitationStyleType } from '@/components/citations/CitationStyleSelector'
 import { Button } from '@/components/ui/button'
+import type { TiptapEditorRef } from './tiptap/TiptapEditor'
 import {
   Dialog,
   DialogContent,
@@ -81,6 +82,7 @@ export function EditorClient({ project, initialChapters, showPrayerPrompt, initi
   const [citationStyle] = useState<CitationStyleType>('chicago')
   const [lookupVerseRef, setLookupVerseRef] = useState<string | null>(null)
   const [plannerOpen, setPlannerOpen] = useState(false)
+  const tiptapRef = useRef<TiptapEditorRef>(null)
 
   // Resizable panel widths (in px)
   const [leftWidth, setLeftWidth] = useState(224)   // w-56 default
@@ -226,6 +228,24 @@ export function EditorClient({ project, initialChapters, showPrayerPrompt, initi
       ...prev,
       [chapterId]: sections,
     }))
+
+    if (chapterId === activeChapterId) {
+      // Reconstruct the HTML safely merging any text the user typed in existing nodes
+      setEditorContent((prev) => {
+        const { intro, sections: existingParsed } = decomposeSectionedContent(prev)
+        const mergedSections = sections.map((s) => ({
+          ...s,
+          content: existingParsed.find((ep: { id: string; content: string }) => ep.id === s.id)?.content || ''
+        }))
+        // Note: assembleSectionedContent comes from /lib/editor/sectionContent.ts
+        const assembled = assembleSectionedContent(intro, mergedSections)
+        if (assembled !== prev) {
+          // Remount with new structure
+          setTimeout(() => handleApplyAiResult(assembled), 0)
+        }
+        return prev
+      })
+    }
   }
 
   const handleSectionStatusChange = (sectionId: string, status: SectionStatus) => {
@@ -334,13 +354,10 @@ export function EditorClient({ project, initialChapters, showPrayerPrompt, initi
       [chapterId]: [...(prev[chapterId] ?? []), section],
     }))
     // If the added section belongs to the active chapter, append its divider
-    // to the editor so the author can start writing beneath it immediately.
+    // directly without a full remount.
     if (chapterId === activeChapterId) {
       const escapedTitle = section.title.replace(/&/g, '&amp;').replace(/"/g, '&quot;')
-      const dividerHtml =
-        `<div data-type="section-divider" data-section-id="${section.id}" data-section-title="${escapedTitle}" class="section-divider"></div><p></p>`
-      const newContent = editorContent + dividerHtml
-      handleApplyAiResult(newContent)
+      tiptapRef.current?.insertSection(section.id, escapedTitle)
       // Scroll to the newly inserted divider after a short layout tick
       setTimeout(() => handleScrollToSection(section.id), 150)
     }
@@ -353,6 +370,16 @@ export function EditorClient({ project, initialChapters, showPrayerPrompt, initi
     }))
   }
 
+  const handleSectionIdUpdated = (chapterId: string, oldId: string, newSection: Section) => {
+    setSectionsByChapter((prev) => ({
+      ...prev,
+      [chapterId]: (prev[chapterId] ?? []).map(s => s.id === oldId ? newSection : s)
+    }))
+    if (chapterId === activeChapterId) {
+      tiptapRef.current?.updateSectionId(oldId, newSection.id)
+    }
+  }
+
   const handleSectionRenamed = (sectionId: string, newTitle: string) => {
     setSectionsByChapter((prev) => {
       const updated: Record<string, Section[]> = {}
@@ -362,6 +389,21 @@ export function EditorClient({ project, initialChapters, showPrayerPrompt, initi
         )
       }
       return updated
+    })
+
+    // Update the section divider HTML to reflect the new title without destroying the whole document
+    // We update the local HTML representation so it gets saved to the backend with the new title.
+    // TiptapEditor's useEffect handles the live DOM update without remounting!
+    const escapedTitle = newTitle.replace(/&/g, '&amp;').replace(/"/g, '&quot;')
+    setEditorContent((prev) => {
+      const regex = new RegExp(`(<div[^>]+data-section-id="${sectionId}"[^>]*data-section-title=")[^"]*("[^>]*>)`, 'g')
+      const newContent = prev.replace(regex, `$1${escapedTitle}$2`)
+      if (newContent !== prev) {
+        setChapters((chaps) =>
+          chaps.map((c) => (c.id === activeChapterId ? { ...c, content: newContent } : c))
+        )
+      }
+      return newContent
     })
   }
 
@@ -492,6 +534,7 @@ export function EditorClient({ project, initialChapters, showPrayerPrompt, initi
             onSectionsGenerated={handleSectionsGenerated}
             onSectionStatusChange={handleSectionStatusChange}
             onSectionAdded={handleSectionAdded}
+            onSectionIdUpdated={handleSectionIdUpdated}
             onSectionDeleted={handleSectionDeleted}
             onSectionRenamed={handleSectionRenamed}
           />
@@ -630,24 +673,27 @@ export function EditorClient({ project, initialChapters, showPrayerPrompt, initi
           </div>
         )}
 
-        {/* Editor — full-width, no extra padding wrapper */}
-        <div className={`flex-1 ${focusMode ? '' : 'px-4 pt-4'}`}>
-        <WritingEditor
-          key={`${activeChapter.id}-${editorKey}`}
-          chapterId={activeChapter.id}
-          projectId={project.id}
-          initialContent={editorContent}
-          onContentChange={handleContentChange}
-          lastMemoryWordCount={lastMemoryWordCount}
-          onMemoryTrigger={handleMemoryTrigger}
-          onAiAction={handleAiAction}
-          onLookupVerse={(ref) => setLookupVerseRef(ref)}
-          paragraphFocus={focusMode}
-          sections={activeSections.map((s) => ({ id: s.id, title: s.title, position: s.position }))}
-        />
+        {/* Editor — paper sheet container */}
+        <div className={`flex-1 flex flex-col ${focusMode ? '' : 'px-4 py-8 items-center'}`}>
+          <div className={`w-full flex flex-col ${focusMode ? 'h-full' : 'max-w-4xl bg-[#FDFCF7] text-slate-900 shadow-[0_8px_30px_rgb(0,0,0,0.06)] rounded-t-xl border border-amber-500/10 px-8 py-12 md:px-16 md:py-20 min-h-[80vh]'}`}>
+            <WritingEditor
+              ref={tiptapRef}
+              key={activeChapter.id}
+              chapterId={activeChapter.id}
+              projectId={project.id}
+              initialContent={editorContent}
+              onContentChange={handleContentChange}
+              lastMemoryWordCount={lastMemoryWordCount}
+              onMemoryTrigger={handleMemoryTrigger}
+              onAiAction={handleAiAction}
+              onLookupVerse={(ref) => setLookupVerseRef(ref)}
+              paragraphFocus={focusMode}
+              sections={activeSections.map((s) => ({ id: s.id, title: s.title, position: s.position }))}
+            />
+          </div>
 
-        {/* Bottom spacing */}
-        <div className="pb-8" />
+          {/* Bottom spacing */}
+          <div className="pb-16" />
         </div>
       </div>
 

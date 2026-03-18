@@ -5,7 +5,8 @@ import { createClient } from '@/lib/supabase/client'
 import { upsertWritingSession } from '@/lib/actions/writing-sessions'
 import { countWords } from '@/lib/utils/text'
 import { decomposeSectionedContent } from '@/lib/editor/sectionContent'
-import { TiptapEditor } from './tiptap/TiptapEditor'
+import { TiptapEditor, TiptapEditorRef } from './tiptap/TiptapEditor'
+import { forwardRef } from 'react'
 
 /** Minimal section descriptor passed in from the parent. */
 interface SectionMeta {
@@ -33,7 +34,7 @@ interface WritingEditorProps {
   sections?: SectionMeta[]
 }
 
-export function WritingEditor({
+export const WritingEditor = forwardRef<TiptapEditorRef, WritingEditorProps>(function WritingEditor({
   chapterId,
   projectId,
   initialContent,
@@ -44,7 +45,7 @@ export function WritingEditor({
   onLookupVerse,
   paragraphFocus,
   sections,
-}: WritingEditorProps) {
+}, ref) {
   const [status, setStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
   const timeoutRef = useRef<NodeJS.Timeout | null>(null)
   const lastSavedRef = useRef(initialContent)
@@ -144,12 +145,14 @@ export function WritingEditor({
   return (
     <div className="flex flex-col flex-1">
       <TiptapEditor
+        ref={ref}
         initialContent={initialContent}
         onUpdate={handleUpdate}
         placeholder="Start writing... Type / to insert scripture, reflection, or story."
         onAiAction={onAiAction}
         onLookupVerse={onLookupVerse}
         paragraphFocus={paragraphFocus}
+        sections={sections}
       />
       {/* Auto-save status — subtle indicator below editor */}
       <div className="flex justify-end pt-1.5 pr-1">
@@ -168,4 +171,4 @@ export function WritingEditor({
       </div>
     </div>
   )
-}
+})

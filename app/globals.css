@@ -143,6 +143,8 @@
 .tiptap-editor {
   white-space: pre-wrap;
   word-wrap: break-word;
+  font-size: 1.125rem;
+  line-height: 1.7;
 }
 
 .tiptap-editor p {

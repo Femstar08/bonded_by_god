@@ -1,7 +1,7 @@
 'use client'
 
 import { useEditor, EditorContent } from '@tiptap/react'
-import { useEffect, useCallback, useRef } from 'react'
+import { useEffect, useCallback, useRef, forwardRef, useImperativeHandle } from 'react'
 import { getExtensions } from './extensions'
 import { Toolbar } from './Toolbar'
 import { FloatingToolbar } from './FloatingToolbar'
@@ -16,6 +16,12 @@ interface TiptapEditorProps {
   onAiAction?: (action: string, selectedText: string) => void
   onLookupVerse?: (reference: string) => void
   paragraphFocus?: boolean
+  sections?: { id: string; title: string; position: number }[]
+}
+
+export interface TiptapEditorRef {
+  insertSection: (id: string, title: string) => void
+  updateSectionId: (oldId: string, newId: string) => void
 }
 
 /**
@@ -37,7 +43,7 @@ function ensureHtml(content: string): string {
     .join('')
 }
 
-export function TiptapEditor({
+export const TiptapEditor = forwardRef<TiptapEditorRef, TiptapEditorProps>(function TiptapEditor({
   initialContent,
   onUpdate,
   placeholder,
@@ -46,7 +52,8 @@ export function TiptapEditor({
   onAiAction,
   onLookupVerse,
   paragraphFocus = false,
-}: TiptapEditorProps) {
+  sections,
+}, ref) {
   const onUpdateRef = useRef(onUpdate)
   onUpdateRef.current = onUpdate
 
@@ -110,6 +117,71 @@ export function TiptapEditor({
     }
   }, [editor, paragraphFocus])
 
+  // Sync section titles smoothly without remounting natively inside Prosemirror
+  useEffect(() => {
+    if (!editor || !sections || sections.length === 0) return
+
+    let needsUpdate = false
+    editor.state.doc.descendants((node) => {
+      if (node.type.name === 'sectionDivider') {
+        const matchingSection = sections.find((s) => s.id === node.attrs.sectionId)
+        if (matchingSection && node.attrs.sectionTitle !== matchingSection.title) {
+          needsUpdate = true
+        }
+      }
+    })
+
+    if (needsUpdate) {
+      const { tr } = editor.state
+      editor.state.doc.descendants((node, pos) => {
+        if (node.type.name === 'sectionDivider') {
+          const matchingSection = sections.find((s) => s.id === node.attrs.sectionId)
+          if (matchingSection && node.attrs.sectionTitle !== matchingSection.title) {
+            tr.setNodeMarkup(pos, undefined, {
+              ...node.attrs,
+              sectionTitle: matchingSection.title,
+            })
+          }
+        }
+      })
+      if (tr.docChanged) {
+        editor.view.dispatch(tr)
+      }
+    }
+  }, [editor, sections])
+
+  // Expose imperative insert command
+  useImperativeHandle(ref, () => ({
+    insertSection: (id: string, title: string) => {
+      if (!editor) return
+      editor
+        .chain()
+        .insertContentAt(editor.state.doc.content.size, [
+          {
+            type: 'sectionDivider',
+            attrs: { sectionId: id, sectionTitle: title },
+          },
+          {
+            type: 'paragraph',
+          },
+        ])
+        .run()
+    },
+    updateSectionId: (oldId: string, newId: string) => {
+      if (!editor) return
+      const { tr } = editor.state
+      editor.state.doc.descendants((node, pos) => {
+        if (node.type.name === 'sectionDivider' && node.attrs.sectionId === oldId) {
+          tr.setNodeMarkup(pos, undefined, {
+            ...node.attrs,
+            sectionId: newId,
+          })
+        }
+      })
+      if (tr.docChanged) editor.view.dispatch(tr)
+    }
+  }))
+
   // Keyboard shortcut: Ctrl+Shift+M / Cmd+Shift+M → toggle dictation
   useEffect(() => {
     if (!isDictationSupported) return
@@ -160,4 +232,4 @@ export function TiptapEditor({
       <EditorContent editor={editor} />
     </div>
   )
-}
+})

@@ -22,6 +22,7 @@ interface WritingJourneyProps {
   onSectionsGenerated?: (chapterId: string, sections: Section[]) => void
   onSectionStatusChange?: (sectionId: string, status: SectionStatus) => void
   onSectionAdded?: (chapterId: string, section: Section) => void
+  onSectionIdUpdated?: (chapterId: string, oldId: string, newSection: Section) => void
   onSectionDeleted?: (chapterId: string, sectionId: string) => void
   onSectionRenamed?: (sectionId: string, newTitle: string) => void
 }
@@ -91,6 +92,7 @@ export function WritingJourney({
   onSectionsGenerated,
   onSectionStatusChange,
   onSectionAdded,
+  onSectionIdUpdated,
   onSectionDeleted,
   onSectionRenamed,
 }: WritingJourneyProps) {
@@ -210,8 +212,24 @@ export function WritingJourney({
     const existingSections = sectionsByChapter[chapterId] ?? []
     const nextPosition = existingSections.length + 1
     const title = `Section ${nextPosition}`
+    const tempId = `temp-${Date.now()}`
 
     setAddingSection(chapterId)
+    
+    // Optimistic Add
+    const tempSection = {
+      id: tempId,
+      chapter_id: chapterId,
+      title,
+      content: '',
+      position: nextPosition,
+      status: 'empty',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      project_id: projectId
+    } as Section
+    onSectionAdded?.(chapterId, tempSection)
+
     try {
       const res = await fetch('/api/writing-map/sections', {
         method: 'POST',
@@ -220,10 +238,13 @@ export function WritingJourney({
       })
       const data = await res.json()
       if (res.ok && data.section) {
-        onSectionAdded?.(chapterId, data.section)
+        onSectionIdUpdated?.(chapterId, tempId, data.section)
+      } else {
+        // Revert on error
+        onSectionDeleted?.(chapterId, tempId)
       }
     } catch {
-      // Non-critical
+      onSectionDeleted?.(chapterId, tempId)
     } finally {
       setAddingSection(null)
     }

@@ -85,23 +85,23 @@ export function DailyScripture({ showDailyScripture }: DailyScriptureProps) {
           <line x1="5" y1="7" x2="15" y2="7" stroke="currentColor" strokeWidth="1.2" />
           <line x1="5" y1="11" x2="15" y2="11" stroke="currentColor" strokeWidth="1.2" />
         </svg>
-        <span className="text-[11px] uppercase tracking-[0.2em] font-medium text-amber-700/50">
+        <span className="text-[11px] uppercase tracking-[0.2em] font-medium text-amber-800/60">
           Daily Scripture
         </span>
       </div>
 
       {/* Decorative opening quotation mark */}
-      <div className="text-4xl font-serif text-amber-300/40 leading-none mb-1" aria-hidden="true">
+      <div className="text-4xl font-serif text-amber-500/40 leading-none mb-1" aria-hidden="true">
         &ldquo;
       </div>
 
       {/* Scripture body */}
-      <p className="font-serif text-xl text-foreground leading-relaxed font-normal">
+      <p className="font-serif text-xl text-slate-900 leading-relaxed font-normal">
         {scripture.text}
       </p>
 
       {/* Reference */}
-      <p className="text-[13px] font-medium text-amber-600/70 mt-4">
+      <p className="text-[13px] font-medium text-amber-700/80 mt-4">
         {scripture.reference}
       </p>
     </div>

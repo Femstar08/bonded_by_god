@@ -128,6 +128,7 @@ export function ChapterDetailPanel({
     setEditingSectionId(null)
   }
 
+  const [title, setTitle] = useState(chapter?.title ?? '')
   const [synopsis, setSynopsis] = useState(chapter?.synopsis ?? '')
   const [wordGoal, setWordGoal] = useState(String(chapter?.word_goal ?? 0))
   const [generatingSynopsis, setGeneratingSynopsis] = useState(false)
@@ -137,9 +138,20 @@ export function ChapterDetailPanel({
 
   // Sync local state when chapter prop changes
   useEffect(() => {
+    setTitle(chapter?.title ?? '')
     setSynopsis(chapter?.synopsis ?? '')
     setWordGoal(String(chapter?.word_goal ?? 0))
-  }, [chapter?.id, chapter?.synopsis, chapter?.word_goal])
+  }, [chapter?.id, chapter?.title, chapter?.synopsis, chapter?.word_goal])
+
+  const handleTitleBlur = () => {
+    if (!chapter) return
+    const trimmed = title.trim()
+    if (trimmed && trimmed !== chapter.title) {
+      onUpdate(chapter.id, { title: trimmed })
+    } else {
+      setTitle(chapter.title)
+    }
+  }
 
   // Auto-save synopsis with 600ms debounce
   const scheduleSave = useCallback(
@@ -282,6 +294,18 @@ export function ChapterDetailPanel({
         ) : (
           <div className="flex-1 overflow-y-auto">
             <div className="px-5 py-5 space-y-5">
+              {/* Title Input */}
+              <div className="space-y-1.5">
+                <Label className="text-xs text-slate-500">{chapter.type === 'part' ? 'Part' : labels.chapter} Title</Label>
+                <Input
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  onBlur={handleTitleBlur}
+                  onKeyDown={(e) => e.key === 'Enter' && handleTitleBlur()}
+                  className="h-8 text-sm font-medium border-amber-500/20 focus-visible:ring-amber-500/30 text-slate-900 bg-[#FDFCF7]"
+                  aria-label="Edit title"
+                />
+              </div>
               {/* Status + word count row */}
               <div className="flex items-start gap-4">
                 <div className="flex-1 space-y-1.5">

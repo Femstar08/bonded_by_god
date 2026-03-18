@@ -33,7 +33,7 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="p-10 bg-white rounded-2xl shadow-sm">
+    <div className="p-10 bg-[#FDFCF7] rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-amber-500/10">
       {/* Page heading */}
       <h2 className="font-serif text-3xl font-normal text-foreground mb-2">
         Welcome back

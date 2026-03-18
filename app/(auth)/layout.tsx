@@ -7,8 +7,7 @@ export default function AuthLayout({
     <div className="flex min-h-screen">
       {/* Left panel — decorative, hidden on mobile */}
       <div
-        className="hidden md:flex md:w-[45%] flex-col items-center justify-center relative overflow-hidden"
-        style={{ background: 'linear-gradient(160deg, #0f1a2e 0%, #162040 60%, #1a2a50 100%)' }}
+        className="hidden md:flex md:w-[45%] flex-col items-center justify-center relative overflow-hidden bg-[#0A1128] border-r border-amber-500/10"
       >
         {/* Subtle texture overlay */}
         <div
@@ -92,8 +91,7 @@ export default function AuthLayout({
 
       {/* Right panel — form content */}
       <div
-        className="flex-1 flex items-center justify-center px-6 py-12"
-        style={{ background: 'linear-gradient(180deg, #faf8f5 0%, #f5f2ee 100%)' }}
+        className="flex-1 flex items-center justify-center px-6 py-12 bg-white"
       >
         <div className="w-full max-w-md">
           {/* Mobile-only brand header */}
